@@ -2059,7 +2059,7 @@ function feedPanelHTML(D) {
   let head = '<div class="ph"><span class="ph-t">Calendar uplink</span>' + (linked && MCP ? '<button class="link ph-m" type="button" data-act="feed-sync"' + (f.state === 'syncing' ? ' disabled' : '') + '>' + (f.state === 'syncing' ? 'SYNCING…' : 'SYNC NOW') + '</button>' : '') + '</div>';
   let body = remPanelHTML() + '<div class="lbl" style="margin-top:14px">Canvas feed</div>';
   if (f.avail === false || (f.avail === null && !MCP)) {
-    body += '<p class="feed-msg">' + (f.avail === null ? 'Connecting to your calendar…' : (isApp() ? 'Automatic Canvas import needs the claude.ai version. In the app, add due dates as ops, or import your Canvas calendar (.ics) into Schedule.' : 'Calendar sync runs when this page is open inside Claude, on the web or in the app.')) + '</p>';
+    body += '<p class="feed-msg">' + (f.avail === null ? 'Connecting to your calendar…' : (isApp() ? 'Automatic Canvas import isn\'t available in the app. Add due dates as ops, or import your Canvas calendar (.ics) into Schedule.' : 'Calendar sync runs when this page is open inside Claude, on the web or in the app.')) + '</p>';
   } else if (!linked) {
     body += '<p class="feed-msg">Pull every Canvas due date onto your board automatically, from the Canvas calendar in your Google Calendar. Nothing to type each week.</p><div class="feed-acts"><button class="btn hud" type="button" data-act="feed-link">LINK CANVAS</button></div>';
   } else {
@@ -2732,7 +2732,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3285,7 +3285,7 @@ function modalHTML(D) {
       '<div class="field"><label for="enroll-cs">Callsign</label><input class="inp big" id="enroll-cs" data-bind="enroll.callsign" maxlength="18" placeholder="' + esc(e.sugg[0]) + '" value="' + esc(e.callsign) + '" autocomplete="off"></div>' +
       '<div class="chips">' + e.sugg.map(function (s) { return '<button type="button" class="chipbtn" data-act="en-sugg" data-v="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '<button type="button" class="chipbtn" data-act="en-reroll">↻ MORE</button></div>' +
       '<div class="field"><span>Daily quota · ops closed</span><div class="seg" role="radiogroup" aria-label="Daily quota">' + [1, 2, 3, 4, 5].map(function (q) { return '<button type="button" role="radio" aria-checked="' + (e.quota === q) + '" data-act="en-quota" data-v="' + q + '">' + q + '</button>'; }).join('') + '</div><p class="hint" style="margin-top:4px">' + e.quota + (e.quota === 1 ? ' op' : ' ops') + ' closed a day. You can change it later.</p></div>' +
-      '<button class="deploy-btn" type="button" data-act="enlist"><span class="dl">ENLIST</span><span class="dt">→</span></button>' + (isApp() ? '<button class="link" type="button" data-act="backup-restore">MOVING FROM CLAUDE? RESTORE A BACKUP →</button>' : '') + '</div></div>';
+      '<button class="deploy-btn" type="button" data-act="enlist"><span class="dl">ENLIST</span><span class="dt">→</span></button>' + (isApp() ? '<button class="link" type="button" data-act="backup-restore">HAVE A BACKUP? RESTORE IT →</button>' : '') + '</div></div>';
   }
   if (m === 'dump') {
     return '<div class="mod" role="dialog" aria-modal="true" aria-labelledby="dm-t"><div class="mcard"><div class="mhead"><div><div class="eyebrow">Intake</div><h2 class="mtitle" id="dm-t">BRAIN DUMP</h2></div>' + closeX() + '</div>' +

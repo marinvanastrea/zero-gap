@@ -11,7 +11,7 @@ It installs to your phone's home screen and works with no internet. Your data st
 - **iPhone (Safari):** open the link → Share → **Add to Home Screen**.
 - **Android (Chrome):** open the link → ⋮ menu → **Install app** (or **Add to Home screen**).
 
-Open it once while online. After that it runs offline.
+Open it once while online. After that it runs offline. Everyone who opens the link gets their own blank copy; nobody can see anyone else's data.
 
 ## Your data
 
@@ -37,3 +37,7 @@ For every change, bump both version numbers together:
 | `sw.js` | Offline cache and update handling |
 | `manifest.webmanifest` | Name, colors and icons for installing |
 | `icons/` | Home-screen icons |
+
+## License
+
+MIT. Use it, fork it, change it. See [LICENSE](LICENSE).
