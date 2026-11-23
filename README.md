@@ -1,6 +1,6 @@
 # ZERØ GAP
 
-A personal task app for ADHD brains, styled like a covert-ops console: ops board, notes, a Proton Calendar schedule, a focus timer and a ledger of everything you closed.
+A personal task app for ADHD brains, styled like a covert-ops console: ops board, notes, a Proton Calendar schedule, guided stretch routines, a focus timer and a ledger of everything you closed.
 
 It installs to your phone's home screen and works with no internet. Your data stays on your device and never goes to this repo or any server.
 
@@ -12,6 +12,12 @@ It installs to your phone's home screen and works with no internet. Your data st
 - **Android (Chrome):** open the link → ⋮ menu → **Install app** (or **Add to Home screen**).
 
 Open it once while online. After that it runs offline. Everyone who opens the link gets their own blank copy; nobody can see anyone else's data.
+
+## FLEX: stretch routines
+
+Eight guided routines, 3 to 5 minutes each: morning wake-up, desk reset, hands & wrists, neck & shoulders, lower back, hips & legs, bedtime wind-down and a quick reset. A ring timer counts each hold, and spoken cues name every stretch and tell you when to switch sides, so you can keep your eyes off the screen. Works offline.
+
+INFIL routes add a quick stretch as a waypoint, and the 15-minute stand-down break offers the desk routine.
 
 ## Your data
 

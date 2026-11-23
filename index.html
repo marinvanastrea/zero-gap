@@ -91,7 +91,7 @@ body.has-mini #app{padding-bottom:calc(156px + env(safe-area-inset-bottom,0px))}
 .tab[aria-current="page"]{color:var(--hud)}
 .tab[aria-current="page"]::after{content:"";position:absolute;left:50%;top:0;width:30px;height:2px;margin-left:-15px;background:var(--hud);box-shadow:0 0 12px var(--hud)}
 .tab-n{position:absolute;top:6px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 4px;background:var(--t2);color:#1b1100;font:700 9.5px/17px var(--f-mono);letter-spacing:0;text-align:center}
-.tabs-bottom{position:fixed;left:0;right:0;bottom:0;z-index:35;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(7,9,12,.96);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.tabs-bottom{position:fixed;left:0;right:0;bottom:0;z-index:35;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(7,9,12,.96);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 @media (min-width:900px){
   .tabs-top{display:flex;gap:4px;margin-left:24px;align-self:stretch}
   .tabs-top .tab{flex-direction:row;gap:8px;min-height:0;padding:0 14px;font-size:11px}
@@ -658,6 +658,36 @@ textarea.inp#note-edit{min-height:120px}
 .bn-act{min-height:28px;color:var(--t2)}
 .banner.ok{background:rgba(76,201,176,.07);border-bottom-color:rgba(76,201,176,.3);color:var(--hud)}
 .banner.ok .bn-act{color:var(--hud)}
+/* ===== FLEX: stretch routines ===== */
+.fx-ov{z-index:65}
+.fx-cue{max-width:40ch;margin:2px auto 0;color:var(--dim);font-size:15px;line-height:1.5;text-align:center;text-wrap:pretty}
+.fx-ring{width:min(62vw,38vh,270px);aspect-ratio:1}
+.fx-ring svg{display:block;width:100%;height:100%}
+.fx-track{fill:none;stroke:var(--line);stroke-width:10}
+.fx-arc{fill:none;stroke:var(--tc);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.fx-dig{font:700 58px var(--f-mono);fill:var(--bone)}
+.fx-unit{font:600 11px var(--f-mono);letter-spacing:.14em;fill:var(--mute)}
+.fx-ctl{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%}
+.fx-ctl .btn{flex:1 1 96px}
+.fx-next{font:600 11px/1.4 var(--f-mono);letter-spacing:.08em;color:var(--dim);text-align:center}
+.fx-safe{font-size:12.5px;color:var(--mute);text-align:center}
+.fx-prog{display:flex;gap:3px;width:100%}
+.fx-prog i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.fx-prog i.on{background:var(--tc);opacity:.5}
+.fx-prog i.cur{background:var(--tc)}
+.flx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.fx-card{display:grid;gap:10px;align-content:start}
+.fx-card .ph{margin-bottom:0}
+.fx-name{font:600 19px/1.25 var(--f-ui);overflow-wrap:anywhere}
+.fx-name.big{font-family:var(--f-display);font-size:clamp(26px,6vw,34px);line-height:1.05;margin-bottom:6px}
+.fx-desc{color:var(--dim);font-size:14px}
+.fx-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.chip.fx-ok{color:var(--hud)}
+.fx-list{margin:0;padding-left:20px;display:grid;gap:4px;font-size:13.5px;color:var(--dim)}
+.fx-list b{color:var(--bone);font-weight:600}
+.fx-rec .deployrow{margin-top:14px}
+.fx-rec{border-color:rgba(76,201,176,.35)}
+@media (max-height:640px){.fx-cue{font-size:14px}.fx-ring{width:min(52vw,32vh,220px)}.fx-safe{display:none}}
 .a-sched{transition:box-shadow .15s,background .15s}
 .a-sched.drag{border-color:var(--hud);box-shadow:inset 0 0 0 1px var(--hud);background:rgba(76,201,176,.06)}
 .ph-m.ag-free{color:var(--hud)}
@@ -710,6 +740,7 @@ textarea.inp#note-edit{min-height:120px}
 <div id="mini"></div>
 <div id="widget"></div>
 <div id="ov"></div>
+<div id="flexov"></div>
 <div id="mod"></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="fx-scan" aria-hidden="true"></div>
@@ -783,6 +814,7 @@ const GLYPH = {
   clock: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 6.5V12l4 2.5" fill="none" stroke="currentColor" stroke-width="2.2"/>'
 };
 const ICON = {
+  flex: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.3" r="2.2" fill="currentColor"/><path d="M4.5 3.5L12 9.2l7.5-5.7M12 9.2v6.3M12 15.5l-4.5 6M12 15.5l4.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   hq: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="1.8"/></svg>',
   ops: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 5.5h7l2 2.2h10v12.8h-19z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 12h11M6.5 15.8h7" stroke="currentColor" stroke-width="1.8"/></svg>',
   infil: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 4.5h5v5h5v5h5v4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="19.5" cy="19.5" r="2.4" fill="currentColor"/></svg>',
@@ -841,7 +873,7 @@ function heatColor(h) {
 }
 function setPath(o, path, v) { const k = path.split('.'); let t = o; for (let i = 0; i < k.length - 1; i++) { if (t[k[i]] == null) t[k[i]] = {}; t = t[k[i]]; } t[k[k.length - 1]] = v; }
 function focusSoon(id) { setTimeout(function () { const el = document.getElementById(id); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } }, 60); }
-function tabFromHash() { const h = (location.hash || '').replace('#', ''); return ['hq', 'ops', 'infil', 'ledger'].indexOf(h) >= 0 ? h : 'hq'; }
+function tabFromHash() { const h = (location.hash || '').replace('#', ''); return ['hq', 'ops', 'infil', 'flex', 'ledger'].indexOf(h) >= 0 ? h : 'hq'; }
 function pickSuggestions() { return CALLSIGNS.slice().sort(function () { return Math.random() - .5; }).slice(0, 4); }
 
 /* ================= STATE ================= */
@@ -1040,6 +1072,7 @@ function buildRoute(posId, target, D) {
   if (cur - th <= GAP_OK) direct = true;
   else {
     (ENV[posId] || []).forEach(function (e) { if (e.h < cur && cur - th > GAP_OK) { steps.push({ kind: 'env', text: e.t, heat: e.h }); cur = e.h; } });
+    if (cur - th > GAP_OK) { const fh = Math.min(cur - 10, Math.max(th + 30, 90)); steps.push({ kind: 'flex', rid: 'quick', text: 'Stretch reset: ' + flexMins(routineById('quick')) + ' minutes, guided out loud. Phone down, body up.', heat: fh }); cur = fh; }
     if (cur - th > GAP_OK) {
       const pool = D.open[4].concat(D.open[3]).filter(function (o) { return o.id !== target.id && opHeat(o) > th; }).sort(function (a, b) { return opHeat(b) - opHeat(a) || byEase(a, b); }).slice(0, 2);
       if (pool.length) pool.forEach(function (o) { const h = Math.min(opHeat(o), cur - 10); steps.push({ kind: 'op', op: o.id, text: o.title, code: o.code, heat: h }); cur = h; });
@@ -2732,7 +2765,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -2825,6 +2858,209 @@ function initApp() {
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', function () { if (reloaded) return; reloaded = true; location.reload(); });
 }
+
+/* ================= FLEX (guided stretch routines) ================= */
+/* Short routines with a ring timer and spoken cues, fully offline. A stretch is one move; sided moves run left
+   then right. Hooks: INFIL routes get a stretch waypoint, the stand-down break offers the desk routine. */
+const STRETCH = {
+  'chin-tuck': { n: 'Chin tucks', a: 'neck', c: 'Sit tall. Slide your chin straight back, hold a second, release. Repeat slowly.' },
+  'ear-shoulder': { n: 'Side neck stretch', a: 'neck', sd: 1, c: 'Drop your ear toward your shoulder. Keep the other shoulder heavy. Breathe.' },
+  'levator': { n: 'Nose-to-armpit stretch', a: 'neck', sd: 1, c: 'Turn your head halfway and look down toward your armpit. Let a hand rest on your head, no pulling.' },
+  'shoulder-rolls': { n: 'Shoulder rolls', a: 'neck', c: 'Roll your shoulders up, back and down. Big, slow circles.' },
+  'cross-body': { n: 'Cross-body shoulder', a: 'neck', sd: 1, c: 'Bring one arm across your chest and hug it in with the other arm. Keep the shoulder low.' },
+  'chest-open': { n: 'Chest opener', a: 'neck', c: 'Hands behind your back, lift your chest, squeeze your shoulder blades together.' },
+  'cat-cow': { n: 'Cat-cow', a: 'back', c: 'On hands and knees, round your back up, then let it dip as you look forward. Move with your breath.' },
+  'pelvic-tilt': { n: 'Pelvic tilts', a: 'back', c: 'Lie on your back, knees bent. Press your low back into the floor, then release. Slow and small.' },
+  'knee-chest': { n: 'Knee to chest', a: 'back', sd: 1, c: 'Lie on your back and hug one knee in. Let the other leg relax.' },
+  'both-knees': { n: 'Knees hug and rock', a: 'back', c: 'Hug both knees to your chest and rock gently side to side.' },
+  'supine-twist': { n: 'Lying twist', a: 'back', sd: 1, c: 'Lie back, let both knees fall to one side, arms wide. Keep your shoulders down.' },
+  'childs': { n: "Child's pose", a: 'back', c: 'Knees wide, sit back toward your heels, arms forward, forehead down. Breathe into your back.' },
+  'seated-twist': { n: 'Seated twist', a: 'back', sd: 1, c: 'Sit tall and turn your chest to one side, a hand on the chair back. Grow taller as you breathe in.' },
+  'hip-flexor': { n: 'Kneeling hip flexor', a: 'hips', sd: 1, c: 'Kneel on one knee, tuck your hips under and shift forward until the front of that hip stretches.' },
+  'hamstring': { n: 'Hamstring stretch', a: 'hips', sd: 1, c: 'Heel on a low step or chair, leg straight. Hinge forward from the hips with a flat back.' },
+  'figure-four': { n: 'Figure-4 stretch', a: 'hips', sd: 1, c: 'On your back, cross one ankle over the other knee and pull both legs gently toward you.' },
+  'seated-figure-four': { n: 'Seated figure-4', a: 'hips', sd: 1, c: 'Ankle on the opposite knee. Sit tall and lean forward a little.' },
+  'calf': { n: 'Calf stretch', a: 'hips', sd: 1, c: 'Hands on a wall, one foot back, heel down, back knee straight.' },
+  'forward-fold': { n: 'Forward fold', a: 'hips', c: 'Feet hip-width, knees soft. Hang forward and let your head and arms relax.' },
+  'hip-circles': { n: 'Hip circles', a: 'hips', c: 'Hands on hips, make big slow circles. Switch direction halfway.' },
+  'prayer': { n: 'Prayer stretch', a: 'hands', c: 'Palms together in front of your chest. Lower your hands until your wrists stretch.' },
+  'wrist-flexor': { n: 'Wrist flexor stretch', a: 'hands', sd: 1, c: 'Arm straight, palm up. Gently pull your fingers down and back with the other hand.' },
+  'wrist-extensor': { n: 'Wrist extensor stretch', a: 'hands', sd: 1, c: 'Arm straight, palm down. Gently bend the wrist so your fingers point to the floor.' },
+  'finger-spread': { n: 'Fist to spread', a: 'hands', c: 'Make a soft fist, then spread your fingers wide. Repeat slowly.' },
+  'thumb': { n: 'Thumb stretch', a: 'hands', sd: 1, c: 'Gently pull your thumb back and out with the other hand.' },
+  'wrist-circles': { n: 'Wrist circles', a: 'hands', c: 'Slow circles both ways, then shake out your hands.' },
+  'overhead-reach': { n: 'Overhead reach', a: 'full', c: 'Lace your fingers, push your palms to the ceiling and grow tall.' },
+  'side-bend': { n: 'Standing side bend', a: 'full', sd: 1, c: 'One arm overhead, lean to the other side. Keep both feet planted.' },
+  'slow-breath': { n: 'Slow breathing', a: 'full', c: 'Breathe in for four, out for six. Let your shoulders drop on every breath out.' }
+};
+const FLEX_AREAS = { neck: ['NECK & SHOULDERS', 't3'], back: ['LOWER BACK', 't2'], hips: ['HIPS & LEGS', 't4'], hands: ['WRISTS & HANDS', 't1'], full: ['FULL BODY', 't5'] };
+const FLEX_POS = { stand: 'STANDING', chair: 'AT YOUR DESK', floor: 'ON THE FLOOR', bed: 'FLOOR OR BED', mix: 'STANDING, THEN FLOOR' };
+const ROUTINES = [
+  { id: 'morning', n: 'Morning wake-up', when: 'MORNING', pos: 'stand', d: 'Gentle full-body start. Wakes you up without a screen.',
+    items: [['overhead-reach', 30], ['side-bend', 30], ['shoulder-rolls', 30], ['hip-circles', 30], ['forward-fold', 30], ['chest-open', 30]] },
+  { id: 'desk', n: 'Desk reset', when: 'BETWEEN OPS', pos: 'chair', d: 'Undo the sitting hunch without leaving your chair.',
+    items: [['chin-tuck', 20], ['ear-shoulder', 20], ['seated-twist', 20], ['chest-open', 20], ['wrist-flexor', 20], ['seated-figure-four', 25]] },
+  { id: 'hands', n: 'Hands & wrists', when: 'AFTER PC OR GAMING', pos: 'chair', d: 'For typing, mouse and controller hands.',
+    items: [['prayer', 20], ['wrist-flexor', 20], ['wrist-extensor', 20], ['finger-spread', 20], ['thumb', 15], ['wrist-circles', 20]] },
+  { id: 'neck', n: 'Neck & shoulders', when: 'ANY TIME', pos: 'chair', d: 'Phone neck and tight shoulders, released.',
+    items: [['shoulder-rolls', 30], ['chin-tuck', 30], ['ear-shoulder', 25], ['levator', 25], ['cross-body', 25], ['chest-open', 30]] },
+  { id: 'back', n: 'Lower back relief', when: 'ANY TIME', pos: 'floor', d: 'Eases a stiff low back from long sitting.',
+    items: [['pelvic-tilt', 30], ['cat-cow', 40], ['knee-chest', 25], ['supine-twist', 30], ['childs', 40]] },
+  { id: 'hips', n: 'Hips & legs', when: 'ANY TIME', pos: 'mix', d: 'Opens hips and the backs of your legs.',
+    items: [['calf', 20], ['hamstring', 30], ['hip-flexor', 30], ['figure-four', 30]] },
+  { id: 'bed', n: 'Bedtime wind-down', when: 'BEFORE BED', pos: 'bed', d: 'Slow and quiet. Do it on your bed, then lights out.',
+    items: [['childs', 40], ['cat-cow', 30], ['supine-twist', 30], ['figure-four', 30], ['both-knees', 30], ['slow-breath', 40]] },
+  { id: 'quick', n: 'Quick reset', when: 'TO BREAK A SCROLL', pos: 'stand', d: 'Stand up and reset. Used as an INFIL waypoint.',
+    items: [['overhead-reach', 20], ['shoulder-rolls', 20], ['ear-shoulder', 15], ['wrist-flexor', 15], ['forward-fold', 20]] }
+];
+const FLEX_C = 2 * Math.PI * 88;
+function routineById(id) { return ROUTINES.find(function (r) { return r.id === id; }) || null; }
+function flexSteps(r) {
+  const out = [];
+  r.items.forEach(function (it) {
+    const s = STRETCH[it[0]]; if (!s) return;
+    const dur = it[1] || 30;
+    if (s.sd) { out.push({ id: it[0], dur: dur, side: 'LEFT' }); out.push({ id: it[0], dur: dur, side: 'RIGHT', sw: true }); }
+    else out.push({ id: it[0], dur: dur, side: '' });
+  });
+  return out;
+}
+function readyMs(s) { return s.sw ? 3000 : 5000; }
+function flexTotalMs(r) { return flexSteps(r).reduce(function (a, s) { return a + s.dur * 1000 + readyMs(s); }, 0); }
+function flexMins(r) { return Math.max(1, Math.round(flexTotalMs(r) / 60000)); }
+function flexAreas(r) { const seen = []; r.items.forEach(function (it) { const s = STRETCH[it[0]]; if (s && seen.indexOf(s.a) < 0) seen.push(s.a); }); return seen; }
+function flexVoiceOn() { const fx = (S.hq && S.hq.flex) || {}; return fx.voice !== false; }
+function flexHush() { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {} }
+function flexSay(text) {
+  if (!flexVoiceOn() || !Sfx.enabled()) return;
+  try {
+    const ss = window.speechSynthesis;
+    if (!ss || typeof SpeechSynthesisUtterance === 'undefined') return;
+    ss.cancel();
+    const u = new SpeechSynthesisUtterance(text), v = Sfx.pickVoice();
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-US';
+    u.rate = 1; u.pitch = 1; u.volume = 1;
+    ss.speak(u);
+  } catch (e) {}
+}
+function flexRecId() { const h = new Date().getHours(); return h >= 5 && h < 11 ? 'morning' : (h >= 21 || h < 5) ? 'bed' : 'desk'; }
+function flexCur() { const f = ui.flex; return f ? f.steps[f.i] : null; }
+function flexStart(rid, ctx) {
+  const r = routineById(rid); if (!r) return;
+  ui.flex = { rid: rid, steps: flexSteps(r), i: 0, phase: 'ready', end: 0, left: null, ctx: ctx || null, started: Date.now(), beep: -1 };
+  Sfx.ensure(); Sfx.play('open');
+  holdWake();
+  flexPhase('ready');
+}
+function flexPhase(ph) {
+  const f = ui.flex; if (!f) return;
+  const s = flexCur();
+  f.phase = ph; f.left = null; f.beep = -1;
+  if (ph === 'ready') {
+    const st = STRETCH[s.id];
+    f.end = Date.now() + readyMs(s);
+    flexSay(s.sw ? 'Switch sides.' : (f.i === 0 ? 'Get ready. ' : 'Next. ') + st.n + (s.side ? ', left side. ' : '. ') + st.c);
+  } else if (ph === 'go') {
+    f.end = Date.now() + s.dur * 1000;
+    Sfx.play('blip');
+  } else {
+    f.end = 0;
+    Sfx.play('good');
+    flexSay('Routine complete. Nice work.');
+    const fx = Object.assign({}, (S.hq && S.hq.flex) || {});
+    fx.done = Object.assign({}, fx.done || {}); fx.done[f.rid] = dayKey(Date.now());
+    if (S.hq) patchHQ({ flex: fx });
+    if (!(S.hq && S.hq.active && S.hq.active.kind === 'op')) releaseWake();
+  }
+  render();
+}
+function flexAdvance() { const f = ui.flex; if (!f) return; if (f.phase === 'ready') { flexPhase('go'); return; } flexSkip(); }
+function flexSkip() { const f = ui.flex; if (!f || f.phase === 'done') return; if (f.i + 1 >= f.steps.length) { flexPhase('done'); return; } f.i++; flexPhase('ready'); }
+function flexBack() {
+  const f = ui.flex; if (!f) return;
+  if (f.phase === 'done') f.i = f.steps.length - 1;
+  else if (f.phase === 'ready' && f.i > 0) f.i--;
+  flexPhase('ready');
+}
+function flexPause(force) {
+  const f = ui.flex; if (!f || f.phase === 'done') return;
+  if (f.left == null) { f.left = Math.max(0, f.end - Date.now()); flexHush(); }
+  else if (!force) { f.end = Date.now() + f.left; f.left = null; }
+  render();
+}
+function flexClose() {
+  if (!ui.flex) return;
+  ui.flex = null; flexHush();
+  if (!(S.hq && S.hq.active && S.hq.active.kind === 'op')) releaseWake();
+  Sfx.ui('close'); render();
+}
+function flexFinish() {
+  const f = ui.flex; if (!f) return;
+  const ctx = f.ctx;
+  ui.flex = null; flexHush();
+  if (ctx === 'route' && S.hq && S.hq.route) { routeAdvance(false); if (ui.tab !== 'infil') location.hash = 'infil'; return; }
+  render();
+}
+function flexTick() {
+  const f = ui.flex; if (!f || f.phase === 'done') return;
+  const s = flexCur(), rem = f.left != null ? f.left : f.end - Date.now();
+  const total = f.phase === 'go' ? s.dur * 1000 : readyMs(s);
+  const ring = document.getElementById('flex-ring'); if (ring) ring.style.strokeDashoffset = String(FLEX_C * (1 - Math.max(0, Math.min(1, rem / total))));
+  const dg = document.getElementById('flex-digits'); if (dg) dg.textContent = String(Math.max(0, Math.ceil(rem / 1000)));
+  if (f.left != null) return;
+  const sec = Math.ceil(rem / 1000);
+  if (f.phase === 'go' && sec >= 1 && sec <= 3 && sec !== f.beep) { f.beep = sec; Sfx.play('count'); }
+  if (rem <= 0) flexAdvance();
+}
+function flexOverlayHTML() {
+  const f = ui.flex; if (!f) return '';
+  const r = routineById(f.rid);
+  if (f.phase === 'done') {
+    const mins = Math.max(1, Math.round((Date.now() - f.started) / 60000));
+    const label = f.ctx === 'route' ? 'NEXT WAYPOINT' : f.ctx === 'break' ? 'BACK TO BREAK' : 'DONE';
+    return '<div class="ov fx-ov t5" role="dialog" aria-modal="true" aria-label="Routine complete"><div class="ov-in sec"><div class="stamp good">LOOSE</div>' +
+      '<div class="ov-op"><div class="opcode">' + esc(r.n) + ' · complete</div><div class="optitle">' + mins + (mins === 1 ? ' minute' : ' minutes') + ', ' + f.steps.length + ' holds. Body reset.</div></div>' +
+      '<div class="secact"><button class="deploy-btn" type="button" data-act="flex-done"><span class="dl">' + label + '</span><span class="dt">→</span></button><button class="link" type="button" data-act="flex-back">REPEAT LAST STRETCH</button></div></div></div>';
+  }
+  const s = flexCur(), st = STRETCH[s.id], A = FLEX_AREAS[st.a], ready = f.phase === 'ready', paused = f.left != null;
+  const rem = paused ? f.left : Math.max(0, f.end - Date.now()), total = ready ? readyMs(s) : s.dur * 1000;
+  const off = (FLEX_C * (1 - Math.max(0, Math.min(1, rem / total)))).toFixed(2);
+  const nxt = f.steps[f.i + 1], ns = nxt && STRETCH[nxt.id];
+  const prog = f.steps.map(function (x, j) { return '<i class="' + (j < f.i ? 'on' : j === f.i ? 'cur' : '') + '"></i>'; }).join('');
+  const ring = '<svg viewBox="0 0 200 200" role="img" aria-label="' + (ready ? 'Get ready' : 'Hold') + ', seconds left"><circle cx="100" cy="100" r="88" class="fx-track"/>' +
+    '<circle id="flex-ring" cx="100" cy="100" r="88" class="fx-arc" transform="rotate(-90 100 100)" style="stroke-dasharray:' + FLEX_C.toFixed(2) + ';stroke-dashoffset:' + off + '"/>' +
+    '<text id="flex-digits" x="100" y="114" text-anchor="middle" class="fx-dig">' + Math.ceil(rem / 1000) + '</text>' +
+    '<text x="100" y="142" text-anchor="middle" class="fx-unit">' + (paused ? 'PAUSED' : ready ? (s.sw ? 'SWITCH SIDES' : 'GET READY') : 'HOLD') + '</text></svg>';
+  const nextTxt = !ns ? 'LAST STRETCH' : 'NEXT · ' + esc(ns.n.toUpperCase()) + (nxt.sw ? ' · OTHER SIDE' : nxt.side ? ' · LEFT SIDE' : '');
+  return '<div class="ov fx-ov ' + A[1] + '" role="dialog" aria-modal="true" aria-label="Stretch routine"><div class="ov-in">' +
+    '<div class="ov-top"><span class="rec' + (paused ? ' idle' : '') + '"><i></i>' + esc(r.n.toUpperCase()) + ' · ' + (f.i + 1) + '/' + f.steps.length + '</span>' +
+    '<div class="ov-btns"><button class="btn sm' + (flexVoiceOn() ? ' hud' : '') + '" type="button" data-act="flex-voice" aria-pressed="' + flexVoiceOn() + '">' + (flexVoiceOn() ? 'VOICE ON' : 'VOICE OFF') + '</button><button class="btn sm" type="button" data-act="flex-close" aria-label="End routine">END</button></div></div>' +
+    '<div class="fx-prog" aria-hidden="true">' + prog + '</div>' +
+    '<div class="ov-op"><div class="opcode">' + A[0] + (s.side ? ' · ' + s.side + ' SIDE' : '') + '</div><div class="optitle">' + esc(st.n) + '</div><p class="fx-cue">' + esc(st.c) + '</p></div>' +
+    '<div class="fx-ring">' + ring + '</div>' +
+    '<div class="fx-ctl"><button class="btn" type="button" data-act="flex-back">← BACK</button><button class="btn hud" type="button" data-act="flex-pause">' + (paused ? 'RESUME' : 'PAUSE') + '</button><button class="btn" type="button" data-act="flex-skip">SKIP →</button></div>' +
+    '<p class="fx-next">' + nextTxt + '</p><p class="fx-safe">Ease in. A mild pull, never pain.</p></div></div>';
+}
+function flexCardHTML(r, today, done) {
+  const open = ui.flexOpen === r.id, isDone = done[r.id] === today;
+  const chips = flexAreas(r).map(function (a) { return '<span class="chip ' + FLEX_AREAS[a][1] + '">' + FLEX_AREAS[a][0] + '</span>'; }).join('');
+  const list = open ? '<ol class="fx-list">' + r.items.map(function (it) { const s = STRETCH[it[0]]; return '<li><b>' + esc(s.n) + '</b> · ' + it[1] + 's' + (s.sd ? ' each side' : '') + '</li>'; }).join('') + '</ol>' : '';
+  return '<article class="panel fx-card"><div class="ph"><span class="ph-t">' + r.when + '</span><span class="ph-m">' + flexMins(r) + ' MIN</span></div>' +
+    '<h3 class="fx-name">' + esc(r.n) + '</h3><p class="fx-desc">' + esc(r.d) + '</p><div class="fx-meta"><span class="chip">' + FLEX_POS[r.pos] + '</span>' + chips + (isDone ? '<span class="chip fx-ok">✓ DONE TODAY</span>' : '') + '</div>' + list +
+    '<div class="row"><button class="btn sm hud" type="button" data-act="flex-start" data-v="' + r.id + '">START</button><button class="btn sm" type="button" data-act="flex-list" data-v="' + r.id + '" aria-expanded="' + open + '">' + (open ? 'HIDE STRETCHES' : 'SEE STRETCHES') + '</button></div></article>';
+}
+function viewFlex() {
+  if (!S.ready) return viewLoading();
+  const fx = (S.hq && S.hq.flex) || {}, done = fx.done || {}, today = dayKey(Date.now()), rec = routineById(flexRecId());
+  const head = '<div class="vhead"><div class="vhead-t"><div class="eyebrow">Station 05 // Field conditioning</div><h1 class="vt">FLEX</h1><p class="vsub">Three to five minute stretch routines, guided out loud so you can keep your eyes off the screen. Ease into each one: a mild pull, never pain.</p></div>' +
+    '<div class="vhead-a"><button class="btn' + (flexVoiceOn() ? ' hud' : '') + '" type="button" data-act="flex-voice" aria-pressed="' + flexVoiceOn() + '">' + (flexVoiceOn() ? 'VOICE ON' : 'VOICE OFF') + '</button></div></div>';
+  const chips = flexAreas(rec).map(function (a) { return '<span class="chip ' + FLEX_AREAS[a][1] + '">' + FLEX_AREAS[a][0] + '</span>'; }).join('');
+  const recHTML = '<section class="panel frame fx-rec t5"><div class="ph"><span class="ph-t">Right now · ' + rec.when + '</span><span class="ph-m">' + flexMins(rec) + ' MIN · ' + FLEX_POS[rec.pos] + '</span></div>' +
+    '<h2 class="fx-name big">' + esc(rec.n) + '</h2><p class="fx-desc">' + esc(rec.d) + '</p><div class="fx-meta">' + chips + (done[rec.id] === today ? '<span class="chip fx-ok">✓ DONE TODAY</span>' : '') + '</div>' +
+    '<div class="deployrow"><button class="deploy-btn" type="button" data-act="flex-start" data-v="' + rec.id + '"><span class="dl">START</span><span class="dt">' + fmtMS(flexTotalMs(rec)) + '</span></button></div></section>';
+  return '<div class="view">' + head + recHTML + '<div class="flx-grid">' + ROUTINES.filter(function (r) { return r.id !== rec.id; }).map(function (r) { return flexCardHTML(r, today, done); }).join('') + '</div></div>';
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && ui.flex && ui.flex.phase !== 'done') flexPause(true); });
 
 /* ================= TOASTS ================= */
 let toastSeq = 0;
@@ -2960,7 +3196,7 @@ function suggHTML() {
 }
 function tabsHTML(D) {
   const n0 = D ? D.open[0].length : 0;
-  return [['hq', 'HQ'], ['ops', 'OPS'], ['infil', 'INFIL'], ['ledger', 'LEDGER']].map(function (t) {
+  return [['hq', 'HQ'], ['ops', 'OPS'], ['infil', 'INFIL'], ['flex', 'FLEX'], ['ledger', 'LEDGER']].map(function (t) {
     return '<a class="tab" href="#' + t[0] + '"' + (ui.tab === t[0] ? ' aria-current="page"' : '') + '>' + ICON[t[0]] + '<span>' + t[1] + '</span>' + (t[0] === 'ops' && n0 ? '<span class="tab-n" aria-label="' + n0 + ' unsorted">' + n0 + '</span>' : '') + '</a>';
   }).join('');
 }
@@ -3108,6 +3344,7 @@ function wpListHTML(route, live) {
     if (live && i === route.at) {
       if (s.kind === 'env' || s.kind === 'gen') acts = '<button class="btn sm hud" type="button" data-act="wp-next">' + (s.kind === 'env' ? 'REACHED' : 'DONE') + '</button>';
       else if (s.kind === 'op') acts = '<button class="btn sm hud" type="button" data-act="wp-done" data-id="' + esc(s.op) + '">CLOSED ✓</button><button class="btn sm" type="button" data-act="wp-next">SKIP</button>';
+      else if (s.kind === 'flex') acts = '<button class="btn sm hud" type="button" data-act="flex-start" data-v="' + esc(s.rid || 'quick') + '" data-ctx="route">START STRETCH</button><button class="btn sm" type="button" data-act="wp-next">SKIP</button>';
       else if (s.kind === 'target') acts = '<button class="btn sm solid" type="button" data-act="wp-breach">BREACH</button>';
     }
     return '<li class="wp ' + st + '" style="--h:' + heatColor(s.heat) + '"><span class="wpc">' + s.wp + '</span><div class="wpb"><div class="wpt">' + esc(stepLabel(s, route, i)) + '</div><div class="wpm">HEAT ' + fmtHeat(s.heat) + (i ? ' · STEP ' + fmtHeat(delta) : '') + '</div>' + (acts ? '<div class="wpa">' + acts + '</div>' : '') + '</div></li>';
@@ -3224,7 +3461,7 @@ function overlayHTML(D) {
   if (t === 'break') {
     return '<div class="ov brk" role="dialog" aria-modal="true" aria-label="Stand down"><div class="ov-in"><div class="ov-top"><span class="rec"><i></i>STAND DOWN · 15 MIN</span>' + lockChip() + '<div class="ov-btns">' + popBtn() + '<button class="btn sm" type="button" data-act="minimize">MINIMIZE</button></div></div>' +
       '<div class="ov-op"><div class="opcode">BREAK</div><div class="optitle">Keep it low-stim so the gap stays small.</div></div><div class="scope">' + scopeSVG(15) + '</div>' +
-      '<p class="ov-rule">Water, stretch, walk, look out a window. Phone stays face down. When the timer ends, you redeploy.</p><button class="btn" type="button" data-act="end-break">END BREAK EARLY</button></div></div>';
+      '<p class="ov-rule">Water, stretch, walk, look out a window. Phone stays face down. When the timer ends, you redeploy.</p><button class="btn hud" type="button" data-act="flex-start" data-v="desk" data-ctx="break">STRETCH · DESK RESET ' + flexMins(routineById('desk')) + ' MIN</button><button class="btn" type="button" data-act="end-break">END BREAK EARLY</button></div></div>';
   }
   if (t === 'secured' && ui.secured) {
     const s = ui.secured, T = TIERS[s.tier || 0], op = s.op && S.ops[s.op], opOpen = op && op.status !== 'closed', r = D.rank;
@@ -3318,6 +3555,7 @@ function modalHTML(D) {
       ['Mission complete', 'The goal is to start, not to finish perfectly. When an op is done, close it with MISSION COMPLETE and HQ hands you the next one. Every closed op colors one block.', 'MISSION COMPLETE on HQ.'],
       ['Op windows (optional)', 'Need a forcing function? Run a 10- or 15-minute op window with the timer where you can see it. No negotiating mid-window. It is an extra: the system works without it.', '10 MIN / 15 MIN under the next op. Hold-to-abort is for real emergencies.'],
       ['The score', 'Every closed op colors one block on your board: the quick payoff that scrolling usually steals. Hit your daily quota, keep the streak alive and watch the clearance ladder climb.', 'LEDGER station.'],
+      ['Flex', 'Your body is part of the gap. Standing up and stretching for two minutes is a real downshift: physical, calm, and easy to start. It also undoes the desk hunch.', 'FLEX station. INFIL routes and breaks offer one too.'],
       ['Baseline', 'Less scrolling overall lowers your baseline heat, which shrinks every gap. It helps, but you cannot block every distraction forever. The steps above work even when the distractions are right there.', 'Optional. The stations are the main tools.']
     ];
     return '<div class="mod" role="dialog" aria-modal="true" aria-labelledby="mn-t"><div class="mcard"><div class="mhead"><div><div class="eyebrow">Doctrine</div><h2 class="mtitle" id="mn-t">FIELD MANUAL</h2></div>' + closeX() + '</div><div class="man">' +
@@ -3437,14 +3675,15 @@ function render() {
   setHTML($('#tabs-top'), tabsHTML(D));
   setHTML($('#tabs-bottom'), tabsHTML(D));
   setHTML($('#banner'), bannerHTML());
-  setHTML($('#view'), ui.tab === 'ops' ? viewOps(D) : ui.tab === 'infil' ? viewInfil(D) : ui.tab === 'ledger' ? viewLedger(D) : viewHQ(D));
+  setHTML($('#view'), ui.tab === 'ops' ? viewOps(D) : ui.tab === 'infil' ? viewInfil(D) : ui.tab === 'flex' ? viewFlex() : ui.tab === 'ledger' ? viewLedger(D) : viewHQ(D));
   setHTML($('#ov'), overlayHTML(D));
+  setHTML($('#flexov'), flexOverlayHTML());
   setHTML($('#mod'), modalHTML(D));
   setHTML($('#mini'), miniHTML());
   setHTML($('#widget'), ui.widget ? widgetHTML(D) : '');
   document.body.classList.toggle('widget', !!ui.widget);
   document.body.classList.toggle('has-mini', !!(S.hq && S.hq.active && ui.minimized));
-  document.body.classList.toggle('locked', !!((!ui.widget && overlayType()) || ui.modal));
+  document.body.classList.toggle('locked', !!((!ui.widget && overlayType()) || ui.modal || ui.flex));
   const sb = document.getElementById('snd-btn');
   if (sb) {
     const on = Sfx.enabled(), lk = on && !Sfx.unlocked && !!S.hq;
@@ -3493,6 +3732,7 @@ function startClock() {
 }
 function tick() {
   updateTimer();
+  flexTick();
   const a = S.hq && S.hq.active;
   cueCheck(a);
   if (Pip.active) Pip.draw();
@@ -3517,13 +3757,14 @@ function closeModal() {
   ui.modal = null; render();
 }
 function onEscape() {
+  if (ui.flex && !ui.modal) { flexClose(); return; }
   if (ui.modal) { if (ui.modal !== 'enroll' && ui.modal !== 'away') closeModal(); return; }
   const t = overlayType();
   if (t === 'window' || t === 'break') { ui.minimized = true; render(); return; }
   if (t) { ui.overlay = null; ui.secured = null; render(); }
 }
 const ACT_SFX = { manual: 'open', settings: 'open', dump: 'open', pick: 'open', triage: 'open', 'purge-open': 'warn', 'close-mod': 'close', 'promo-ok': 'close', dismiss: 'close', 'purge-cancel': 'close', 'crs-cancel': 'close', 'route-abort': 'abort', 'away-discard': 'abort', mins: 'blip', 'tri-res': 'blip', 'en-quota': 'blip', 'set-q': 'blip' };
-const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy']);
+const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close']);
 document.addEventListener('click', function (ev) {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
@@ -3660,6 +3901,14 @@ document.addEventListener('click', function (ev) {
       else { ui.cal.del = id; calDelT = setTimeout(function () { ui.cal.del = null; scheduleRender(); }, 4000); }
       render(); break;
     }
+    case 'flex-start': flexStart(v, el.dataset.ctx || null); break;
+    case 'flex-pause': flexPause(); break;
+    case 'flex-skip': flexSkip(); break;
+    case 'flex-back': flexBack(); break;
+    case 'flex-close': flexClose(); break;
+    case 'flex-done': flexFinish(); break;
+    case 'flex-list': ui.flexOpen = ui.flexOpen === v ? null : v; render(); break;
+    case 'flex-voice': { const fx = Object.assign({}, (S.hq && S.hq.flex) || {}); fx.voice = !flexVoiceOn(); if (S.hq) patchHQ({ flex: fx }); if (fx.voice) flexSay('Voice on.'); else flexHush(); render(); break; }
     case 'feed-link': case 'feed-sync': ui.feed.didAuto = true; syncFeed(true); break;
     case 'feed-perm': if (PERM) PERM.manage().then(function () { syncFeed(true); }).catch(function () { toast('Permissions panel did not open', 'Use the artifact\'s Permissions menu, then tap SYNC NOW.', 'warn'); }); break;
     case 'feed-hz': if (S.feed) { saveFeed(Object.assign({}, S.feed, { horizon: Number(v) || 10 })); render(); syncFeed(true); } break;
