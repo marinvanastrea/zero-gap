@@ -1,6 +1,6 @@
 /* ZERØ GAP service worker: keeps the app working with no internet.
    Bump VERSION (and APP_VERSION in index.html) with every change so phones pick up the update. */
-const VERSION = 'zg-1.0.2';
+const VERSION = 'zg-1.1.0';
 const FONTS = 'zg-fonts';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 

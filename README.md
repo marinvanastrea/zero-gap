@@ -13,9 +13,13 @@ It installs to your phone's home screen and works with no internet. Your data st
 
 Open it once while online. After that it runs offline. Everyone who opens the link gets their own blank copy; nobody can see anyone else's data.
 
+## Why it matters
+
+Every op shows which part of your life it moves forward (School, Career, Money, Health, Home, People, Peace of mind), how big a win it is, and what finishing it does for you. Suggestions come from the title, offline; tap one to make it yours. LEDGER adds up your results per area each week and compares them to last week.
+
 ## FLEX: stretch routines
 
-Eight guided routines, 3 to 5 minutes each: morning wake-up, desk reset, hands & wrists, neck & shoulders, lower back, hips & legs, bedtime wind-down and a quick reset. A ring timer counts each hold, and spoken cues name every stretch and tell you when to switch sides, so you can keep your eyes off the screen. Works offline.
+Eight guided routines, 3 to 5 minutes each: morning wake-up, desk reset, hands & wrists, neck & shoulders, lower back, hips & legs, bedtime wind-down and a quick reset. Each stretch has an illustration (moving ones are animated), a ring timer counts each hold, and spoken cues name every stretch and tell you when to switch sides, so you can keep your eyes off the screen. Works offline.
 
 INFIL routes add a quick stretch as a waypoint, and the 15-minute stand-down break offers the desk routine.
 
