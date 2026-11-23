@@ -851,7 +851,7 @@ textarea.inp#why-text{min-height:96px}
     <div class="classif"><div class="wrap"><span>Top secret</span><span>//</span><span>Zerø gap</span><span>//</span><span>Eyes only</span></div></div>
     <div class="wrap cmd-row">
       <a class="brand" href="#hq" aria-label="ZERØ GAP headquarters">
-        <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15" fill="none" style="stroke:var(--hud)" stroke-width="2.2" stroke-dasharray="78 16.25" transform="rotate(-28 20 20)"/><path d="M20 1.5v6M20 32.5v6M1.5 20h6M32.5 20h6" style="stroke:var(--hud)" stroke-width="2"/><path d="M12 28L28 12" style="stroke:var(--bone)" stroke-width="2.6"/><circle cx="20" cy="20" r="2.6" style="fill:var(--t1)"/></svg>
+        <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><defs><mask id="brand-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40"><rect width="40" height="40" fill="#fff"/><path d="M7.5 32.5L32.5 7.5" stroke="#000" stroke-width="7.5" stroke-linecap="round"/></mask></defs><circle cx="20" cy="20" r="12.5" fill="none" style="stroke:var(--hud)" stroke-width="5.5" mask="url(#brand-cut)"/><path d="M11.5 28.5L28.5 11.5" style="stroke:var(--bone)" stroke-width="3.4" stroke-linecap="round"/></svg>
         <div><div class="brand-name">ZER<i>Ø</i> GAP</div><div class="brand-sub">COVERT OPS COMMAND</div></div>
       </a>
       <nav class="tabs-top" id="tabs-top" aria-label="Stations"></nav>
@@ -2897,7 +2897,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.1.2';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
