@@ -658,6 +658,9 @@ textarea.inp#note-edit{min-height:120px}
 .bn-act{min-height:28px;color:var(--t2)}
 .banner.ok{background:rgba(242,155,75,.07);border-bottom-color:rgba(242,155,75,.3);color:var(--hud)}
 .banner.ok .bn-act{color:var(--hud)}
+.past-row{justify-content:center;margin-top:6px}
+.past-row .link{color:var(--dim)}
+.past-row .link:hover{color:var(--hud)}
 /* ===== FLEX: stretch routines ===== */
 .fx-ov{z-index:65}
 .fx-cue{max-width:40ch;margin:2px auto 0;color:var(--dim);font-size:15px;line-height:1.5;text-align:center;text-wrap:pretty}
@@ -1931,17 +1934,17 @@ function abortWindow() {
   else { Sfx.play('abort'); Sfx.say('Window aborted.'); toast('Window aborted', 'No block logged. Redeploy when you are ready.', 'warn'); }
   render();
 }
-function closeOp(id, quiet) {
+function closeOp(id, quiet, at) {
   const op = S.ops[id]; if (!op || op.status === 'closed') return;
   const used = derive().used[id] || 0;
-  const upd = Object.assign({}, op, { status: 'closed', closedAt: Date.now(), used: used, tier: tierOf(op), autoTier: false });
+  const upd = Object.assign({}, op, { status: 'closed', closedAt: at || Date.now(), used: used, tier: tierOf(op), autoTier: false });
   saveOp(upd);
   const x = closeXP(upd);
   if (ui.expanded === id) { ui.expanded = null; ui.edit = null; }
   if (ui.pinned === id) ui.pinned = null;
   Sfx.play('stamp'); setTimeout(function () { Sfx.play('xp'); }, 260);
   const wy = whyOf(upd);
-  toast('Done · ' + AREAS[wy.area].n + ' +1' + (wy.impact === 3 ? ' · big win' : ''), wy.text, 'good');
+  toast('Done · ' + AREAS[wy.area].n + ' +1' + (wy.impact === 3 ? ' · big win' : '') + (at ? ' · counted for ' + shortDay(dayKey(at)) : ''), wy.text, 'good');
   if (!quiet && !(S.hq && S.hq.debrief === false)) { ui.debrief = { id: id, note: '', mins: null, custom: '' }; ui.modal = 'debrief'; }
   render(); afterAction();
 }
@@ -2894,7 +2897,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3390,6 +3393,56 @@ function flexStripHTML(r) {
   return '<div class="fx-strip" aria-hidden="true">' + seen.map(function (id) { return figSVG(id, { still: true }); }).join('') + '</div>';
 }
 
+/* ================= DONE ON AN EARLIER DAY ================= */
+/* Forgot to mark something? Log it for the day it happened so today's count, streaks and weekly results stay true. */
+function shortDay(k) {
+  const n = new Date();
+  if (k === dayKey(n.getTime())) return 'Today';
+  if (k === dayKey(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1, 12).getTime())) return 'Yesterday';
+  const d = parseDay(k), cap = function (x) { return x.charAt(0) + x.slice(1).toLowerCase(); };
+  return cap(DOW[d.getDay()]) + ' ' + d.getDate() + ' ' + cap(MON[d.getMonth()]);
+}
+function recentDays(n, withToday) { const out = [], b = new Date(); for (let i = withToday ? 0 : 1; i <= n; i++) out.push(dayKey(new Date(b.getFullYear(), b.getMonth(), b.getDate() - i, 12).getTime())); return out; }
+function pastModalHTML() {
+  const P = ui.past, op = P && S.ops[P.id]; if (!op) return '';
+  const rt = !!op.repeat, closed = !rt && op.status === 'closed', today = dayKey(Date.now());
+  const ok = isDate(P.k) && P.k <= today, already = rt && ok && !!(op.doneOn && op.doneOn[P.k]), same = closed && ok && op.closedAt && dayKey(op.closedAt) === P.k;
+  const verb = rt ? 'LOG IT FOR ' : closed ? 'MOVE IT TO ' : 'MARK DONE FOR ';
+  const label = already ? 'ALREADY LOGGED THAT DAY' : same ? 'ALREADY ON THAT DAY' : verb + (ok ? shortDay(P.k).toUpperCase() : '…');
+  return '<div class="mod" role="dialog" aria-modal="true" aria-labelledby="pd-t"><div class="mcard"><div class="mhead"><div><div class="eyebrow">' + (closed ? 'Change the day it was done' : 'Done on an earlier day') + '</div><h2 class="mtitle" id="pd-t">' + esc(op.title) + '</h2></div>' + closeX() + '</div>' +
+    '<p>' + (closed ? 'Pick the day you actually finished it.' : 'Forgot to mark it? Pick the day you did it. It counts for that day, not today, so your daily count, streak and weekly results stay accurate.') + '</p>' +
+    '<div class="field"><span>When did you do it?</span><div class="chips">' + recentDays(6, closed).map(function (k) { return '<button type="button" class="chipbtn" data-act="past-day" data-v="' + k + '" aria-pressed="' + (P.k === k) + '">' + shortDay(k).toUpperCase() + '</button>'; }).join('') + '</div></div>' +
+    '<div class="field"><label for="past-date">Or pick any earlier date</label><input class="inp" type="date" id="past-date" data-bind="past.k" data-live="1" max="' + today + '" value="' + esc(P.k) + '"></div>' +
+    (isDate(P.k) && P.k > today ? '<p class="hint" style="margin:0;color:var(--t2)">That date is in the future. Pick today or earlier.</p>' : '') +
+    '<div class="row"><button class="btn solid" type="button" data-act="past-ok"' + (ok && !already && !same ? '' : ' disabled') + '>' + label + '</button><button class="btn" type="button" data-act="close-mod">CANCEL</button></div></div></div>';
+}
+function pastOpen(id) {
+  const op = S.ops[id]; if (!op) return;
+  const closed = !op.repeat && op.status === 'closed';
+  ui.past = { id: id, k: closed && op.closedAt ? dayKey(op.closedAt) : recentDays(1)[0] };
+  ui.modal = 'past'; render();
+}
+function pastApply() {
+  const P = ui.past, op = P && S.ops[P.id], today = dayKey(Date.now());
+  if (!op || !isDate(P.k) || P.k > today) return;
+  const at = P.k === today ? Date.now() : parseDay(P.k).getTime(), label = shortDay(P.k);
+  ui.past = null; ui.modal = null;
+  if (op.repeat) {
+    const done = Object.assign({}, op.doneOn || {}); done[P.k] = at;
+    saveOp(Object.assign({}, op, { doneOn: done }));
+    Sfx.play('stamp');
+    toast('Logged for ' + label, op.title + (rtStreak(Object.assign({}, op, { doneOn: done })) > 1 ? ' · streak ' + rtStreak(Object.assign({}, op, { doneOn: done })) + ' days' : ''), 'good');
+    render(); afterAction(); return;
+  }
+  if (op.status === 'closed') {
+    saveOp(Object.assign({}, op, { closedAt: at }));
+    Sfx.play('blip');
+    toast('Moved to ' + label, op.title, 'info');
+    render(); afterAction(); return;
+  }
+  closeOp(op.id, false, P.k === today ? null : at);
+}
+
 /* ================= TOASTS ================= */
 let toastSeq = 0;
 function toast(title, body, kind) {
@@ -3466,8 +3519,10 @@ function rtStreak(op) {
   const d = new Date(); d.setHours(12, 0, 0, 0);
   if (!rtDone(op, dayKey(d.getTime()))) d.setDate(d.getDate() - 1);
   let n = 0;
+  const logged = Object.keys(op.doneOn || {}).filter(isDate).map(function (k) { return parseDay(k).getTime() - 43200000; });
+  const floorT = op.created ? Math.min.apply(null, [op.created - 86400000].concat(logged)) : -Infinity;
   for (let i = 0; i < 400; i++) {
-    if (op.created && d.getTime() < op.created - 86400000) break;
+    if (d.getTime() < floorT) break;
     if (rtScheduled(op, d)) { if (rtDone(op, dayKey(d.getTime()))) n++; else break; }
     d.setDate(d.getDate() - 1);
   }
@@ -3500,7 +3555,7 @@ function rtCardHTML(op, D) {
   const open = ui.expanded === op.id, today = rtScheduled(op, new Date()), done = rtDone(op), st = rtStreak(op);
   return '<article class="op t5' + (open ? ' editing' : '') + '"><div class="op-top"><span class="opcode">↻ ' + rtLabel(op) + '</span><span class="optag">' + esc(op.code) + '</span></div>' +
     '<h3 class="optitle">' + esc(op.title) + '</h3><div class="opmeta"><span>STREAK ' + st + (st === 1 ? ' DAY' : ' DAYS') + '</span>' + (today ? '<span class="' + (done ? 'good' : '') + '">' + (done ? 'DONE TODAY' : 'DUE TODAY') + '</span>' : '<span>OFF TODAY</span>') + '</div>' +
-    '<div class="opact">' + (today ? '<button class="btn sm' + (done ? '' : ' hud') + '" type="button" data-act="rt-done" data-id="' + op.id + '">' + (done ? '↺ UNDO' : 'DONE TODAY ✓') + '</button>' : '') + '<button class="btn sm" type="button" data-act="edit" data-id="' + op.id + '" aria-expanded="' + open + '">' + (open ? 'CANCEL' : 'EDIT') + '</button></div>' +
+    '<div class="opact">' + (today ? '<button class="btn sm' + (done ? '' : ' hud') + '" type="button" data-act="rt-done" data-id="' + op.id + '">' + (done ? '↺ UNDO' : 'DONE TODAY ✓') + '</button>' : '') + '<button class="btn sm" type="button" data-act="past" data-id="' + op.id + '">PAST DAY</button>' + '<button class="btn sm" type="button" data-act="edit" data-id="' + op.id + '" aria-expanded="' + open + '">' + (open ? 'CANCEL' : 'EDIT') + '</button></div>' +
     (open ? editHTML() : '') + '</article>';
 }
 function rtPanelHTML(D) {
@@ -3552,6 +3607,7 @@ function viewHQ(D) {
     const op = rec.op, T = TIERS[tierOf(op)];
     next = '<div class="nextop ' + T.key + '"><div class="why">' + esc(rec.why) + '</div><div class="opcode">' + T.plain.toUpperCase() + (op.course ? ' · ' + esc(courseLabel(op.course)) : '') + (op.due ? ' · ' + tminus(op.due) : '') + '</div><div class="optitle">' + esc(op.title) + '</div>' + payoffHTML(op) + (op.notes ? '<p class="opnote">' + esc(op.notes) + '</p>' : '') + '</div>' +
       '<div class="deployrow"><button class="deploy-btn" type="button" data-act="close-op" data-id="' + op.id + '"><span class="dl">MISSION COMPLETE</span><span class="dt">✓</span></button></div>' +
+      '<div class="row past-row"><button class="link" type="button" data-act="past" data-id="' + op.id + '">DONE ON AN EARLIER DAY? PICK THE DAY</button></div>' +
       '<div class="deployalt"><a class="btn amber" href="#infil">STUCK? RUN INFILTRATION</a><button class="btn" type="button" data-act="pick">CHOOSE ANOTHER OP</button>' + remBtnHTML(op) + '</div>' +
       (pinned ? '<div class="row" style="margin-top:8px"><button class="link" type="button" data-act="unpin">BACK TO RECOMMENDED OP</button></div>' : '') +
       '<div class="addon"><span class="lbl">Optional · focus timer</span><div class="row">' + [10, 15].map(function (m) { return '<button class="btn sm" type="button" data-act="deploy" data-id="' + op.id + '" data-v="' + m + '">' + m + ' MIN</button>'; }).join('') + '</div></div>';
@@ -3574,7 +3630,7 @@ function opCardHTML(op, D) {
   const T = TIERS[tierOf(op)], open = ui.expanded === op.id;
   return '<article class="op ' + T.key + (open ? ' editing' : '') + '"><div class="op-top">' + payPill(op) + '</div>' +
     '<h3 class="optitle">' + esc(op.title) + '</h3><button type="button" class="pay-line" data-act="why-edit" data-id="' + op.id + '">' + esc(whyOf(op).text) + '</button>' + (op.notes ? '<p class="opnote">' + esc(op.notes) + '</p>' : '') + '<div class="opmeta">' + opMetaHTML(op, D) + '</div>' +
-    '<div class="opact"><button class="btn sm hud" type="button" data-act="close-op" data-id="' + op.id + '">CLOSE ✓</button><button class="btn sm" type="button" data-act="pick-op" data-id="' + op.id + '">DO NOW</button>' + remBtnHTML(op) + '<button class="btn sm" type="button" data-act="edit" data-id="' + op.id + '" aria-expanded="' + open + '">' + (open ? 'CANCEL' : 'EDIT') + '</button></div>' +
+    '<div class="opact"><button class="btn sm hud" type="button" data-act="close-op" data-id="' + op.id + '">CLOSE ✓</button><button class="btn sm" type="button" data-act="past" data-id="' + op.id + '">DONE EARLIER</button><button class="btn sm" type="button" data-act="pick-op" data-id="' + op.id + '">DO NOW</button>' + remBtnHTML(op) + '<button class="btn sm" type="button" data-act="edit" data-id="' + op.id + '" aria-expanded="' + open + '">' + (open ? 'CANCEL' : 'EDIT') + '</button></div>' +
     (open ? editHTML() : '') + '</article>';
 }
 function editHTML() {
@@ -3928,7 +3984,7 @@ function modalHTML(D) {
         stat('Filed', op.created ? dtg(op.created) : '—') + stat('Closed', op.closedAt ? dtg(op.closedAt) : '—') + '</dl>' +
       '<div class="case-sec"><div class="lbl">Notes</div><p>' + (op.notes ? esc(op.notes) : '<span class="dim">No notes on this op.</span>') + '</p></div>' +
       '<div class="case-sec"><div class="lbl">Debrief</div><p>' + (db.note ? esc(db.note) : '<span class="dim">No debrief filed.</span>') + '</p></div>' +
-      '<div class="row"><button class="btn hud" type="button" data-act="db-edit" data-id="' + op.id + '">' + (db.note || db.mins ? 'EDIT DEBRIEF' : 'ADD DEBRIEF') + '</button>' + (op.status === 'closed' ? '<button class="btn" type="button" data-act="reopen" data-id="' + op.id + '">REOPEN</button>' : '') + '<button class="btn" type="button" data-act="close-mod">DONE</button></div></div></div>';
+      '<div class="row"><button class="btn hud" type="button" data-act="db-edit" data-id="' + op.id + '">' + (db.note || db.mins ? 'EDIT DEBRIEF' : 'ADD DEBRIEF') + '</button>' + (op.status === 'closed' ? '<button class="btn" type="button" data-act="past" data-id="' + op.id + '">CHANGE DAY</button><button class="btn" type="button" data-act="reopen" data-id="' + op.id + '">REOPEN</button>' : '') + '<button class="btn" type="button" data-act="close-mod">DONE</button></div></div></div>';
   }
   if (m === 'day' && ui.dayK) {
     const k = ui.dayK, on = function (t) { return t && dayKey(t) === k; };
@@ -3961,6 +4017,7 @@ function modalHTML(D) {
       '<ol class="steps"><li>Open ZERØ GAP in its own app window (Chrome ⋮ → Cast, save, and share → Install page as app).</li><li>Drag that window small. Below about 600 × 600 the page turns into a compact timer widget.</li><li>Install Microsoft PowerToys, click the window, and press Win + Ctrl + T to pin it on top.</li></ol>' +
       '<p class="small">The pop-out works in Chrome and Edge on a computer, but some app views turn it off.</p><div class="row"><button class="btn" type="button" data-act="close-mod">GOT IT</button></div></div></div>';
   }
+  if (m === 'past' && ui.past) return pastModalHTML();
   if (m === 'why' && ui.why) return whyModalHTML();
   if (m === 'restore' && ui.restore) return restoreModalHTML();
   if (m === 'away' && ui.away) {
@@ -4082,7 +4139,7 @@ function onEscape() {
   if (t) { ui.overlay = null; ui.secured = null; render(); }
 }
 const ACT_SFX = { manual: 'open', settings: 'open', dump: 'open', pick: 'open', triage: 'open', 'purge-open': 'warn', 'close-mod': 'close', 'promo-ok': 'close', dismiss: 'close', 'purge-cancel': 'close', 'crs-cancel': 'close', 'route-abort': 'abort', 'away-discard': 'abort', mins: 'blip', 'tri-res': 'blip', 'en-quota': 'blip', 'set-q': 'blip' };
-const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close']);
+const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close', 'past-ok']);
 document.addEventListener('click', function (ev) {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
@@ -4219,6 +4276,9 @@ document.addEventListener('click', function (ev) {
       else { ui.cal.del = id; calDelT = setTimeout(function () { ui.cal.del = null; scheduleRender(); }, 4000); }
       render(); break;
     }
+    case 'past': pastOpen(id); break;
+    case 'past-day': if (ui.past) { ui.past.k = v; render(); } break;
+    case 'past-ok': pastApply(); break;
     case 'why-edit': { const op = S.ops[id]; if (op) { const w = whyOf(op); ui.why = { id: id, area: w.area, impact: w.impact, text: op.payoff || '' }; ui.modal = 'why'; render(); } break; }
     case 'why-area': if (ui.why) { ui.why.area = v; render(); } break;
     case 'why-imp': if (ui.why) { ui.why.impact = Number(v); render(); } break;
