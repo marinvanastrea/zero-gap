@@ -846,6 +846,22 @@ textarea.inp.anc-edit{min-height:96px}
 .anc-exl span{flex:1;min-width:0;font-size:14.5px;line-height:1.45;color:var(--dim)}
 .anc-exl .link{flex:none;min-height:40px;padding:0 8px;color:var(--a-ac)}
 .anc-exnone{margin:10px 0 0;font-size:13px;color:var(--mute)}
+/* ===== week plan ===== */
+.hq .a-plan{order:2}
+.pl-days{display:grid;gap:12px}
+.pl-day .lbl{margin-bottom:6px}
+.pl-day.today .lbl{color:var(--hud)}
+.pl-day.past{opacity:.55}
+.pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pl-list li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--line)}
+.pl-list li.done .pl-t b{text-decoration:line-through;opacity:.6}
+.pl-chk{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:800 15px/1 var(--f-ui);color:var(--hud-ink);box-shadow:inset 0 0 0 2px var(--hud)}
+.pl-list li.done .pl-chk{background:var(--hud)}
+.pl-t{display:grid;gap:2px;min-width:0}
+.pl-t b{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
+.pl-t span{font-size:12.5px;color:var(--dim)}
+.pl-free{margin:0;font-size:13px;color:var(--mute)}
+.mini-dl{color:var(--hud);font-weight:700}
 .ibtn.anc-btn svg{width:19px;height:19px}
 .urge{position:fixed;inset:0;z-index:75;overflow:auto;display:flex;flex-direction:column;background:#020308;color:#a9b1c3;padding:calc(env(safe-area-inset-top,0px) + 14px) max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(18px,env(safe-area-inset-left,0px))}
 .urge-in{width:100%;max-width:520px;margin:0 auto;flex:1;display:flex;flex-direction:column;gap:12px}
@@ -1240,6 +1256,7 @@ function recommend(D) {
   if (last && last.op) { const o = S.ops[last.op], lt = tierOf(o); if (o && o.status !== 'closed' && (lt === 1 || lt === 2)) return { op: o, why: 'Keep going on this one. Switching costs focus.' }; }
   const urgent = all.filter(isUrgent).sort(function (a, b) { return whyOf(b).impact - whyOf(a).impact; });
   if (urgent.length) return { op: urgent[0], why: 'You are warmed up. Time for what matters most.' };
+  const pt = planToday(); if (pt.length) { const it = pt[0], po = S.ops[it.op]; if (po) return { op: po, why: "Today's mini deadline: " + it.step.toLowerCase() + (it.n > 1 ? ' (step ' + (it.i + 1) + ' of ' + it.n + ')' : '') + '. Real deadline ' + shortDay(po.due) + '.' }; }
   if (D.open[2].length) return { op: D.open[2][0], why: 'You are warmed up. Knock out the nearest deadline.' };
   if (D.open[3].length) return { op: D.open[3][0], why: 'Nothing urgent. Clear small admin while you are rolling.' };
   return { op: D.open[4][0], why: 'Everything important is done. Pick something fun.' };
@@ -1879,7 +1896,7 @@ function LocalStore(key, seed) {
     S.cals = clone(data.cal) || {}; S.calKnown = true; S.notesKnown = true; S.anchor = clone(data.anchor);
     S.hqKnown = S.opsKnown = S.logKnown = true; onData();
   };
-  const done = function () { persist(); emit(); return Promise.resolve(); };
+  const done = function () { persist(); emit(); try { syncDirty(); } catch (e) {} return Promise.resolve(); };
   const strip = function (o) { const b = clone(o); delete b.id; return b; };
   return {
     kind: 'local',
@@ -1926,7 +1943,7 @@ function onData() {
     S.ready = true;
     if (S.hq && S.hq.defMins === 10) ui.mins = 10;
   }
-  scheduleAuto(); scheduleRem();
+  scheduleAuto(); scheduleRem(); schedulePlan();
   if (Sfx.amb && Sfx.opt('amb') === 'off') Sfx.ambientStop();
   scheduleRender();
 }
@@ -1935,7 +1952,7 @@ function scheduleRender() { if (rq) return; rq = requestAnimationFrame(function 
 
 /* ================= MUTATIONS ================= */
 function patchHQ(patch) { const next = Object.assign({}, S.hq || {}, patch); S.hq = next; return store.setHQ(next); }
-function saveOp(op) { const m = Object.assign({}, S.ops); m[op.id] = op; S.ops = m; return store.putOp(op); }
+function saveOp(op) { op = Object.assign({}, op, { upd: Date.now() }); const m = Object.assign({}, S.ops); m[op.id] = op; S.ops = m; return store.putOp(op); }
 function removeOp(id) { const m = Object.assign({}, S.ops); delete m[id]; S.ops = m; return store.deleteOp(id); }
 function addLocalDay(k, field, id, entry) {
   const day = Object.assign({ date: k }, clone(S.days[k]) || {});
@@ -2297,7 +2314,7 @@ function feedPanelHTML(D) {
   let head = '<div class="ph"><span class="ph-t">Calendar uplink</span>' + (linked && MCP ? '<button class="link ph-m" type="button" data-act="feed-sync"' + (f.state === 'syncing' ? ' disabled' : '') + '>' + (f.state === 'syncing' ? 'SYNCING…' : 'SYNC NOW') + '</button>' : '') + '</div>';
   let body = remPanelHTML() + '<div class="lbl" style="margin-top:14px">Canvas feed</div>';
   if (f.avail === false || (f.avail === null && !MCP)) {
-    body += '<p class="feed-msg">' + (f.avail === null ? 'Connecting to your calendar…' : (isApp() ? 'Automatic Canvas import isn\'t available in the app. Add due dates as ops, or import your Canvas calendar (.ics) into Schedule.' : 'Calendar sync runs when this page is open inside Claude, on the web or in the app.')) + '</p>';
+    body += '<p class="feed-msg">' + (f.avail === null ? 'Connecting to your calendar…' : (isApp() ? canvasFeedMsg() : 'Calendar sync runs when this page is open inside Claude, on the web or in the app.')) + '</p>';
   } else if (!linked) {
     body += '<p class="feed-msg">Pull every Canvas due date onto your board automatically, from the Canvas calendar in your Google Calendar. Nothing to type each week.</p><div class="feed-acts"><button class="btn hud" type="button" data-act="feed-link">LINK CANVAS</button></div>';
   } else {
@@ -2794,7 +2811,7 @@ function noteWhen(ms) {
   if (k === y) return 'YESTERDAY ' + hhmm(ms);
   return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
 }
-function saveNote(n) { const m = Object.assign({}, S.notes); m[n.id] = n; S.notes = m; return store.putNote(n); }
+function saveNote(n) { n = Object.assign({}, n, { upd: Date.now() }); const m = Object.assign({}, S.notes); m[n.id] = n; S.notes = m; return store.putNote(n); }
 function removeNote(id) { const m = Object.assign({}, S.notes); delete m[id]; S.notes = m; return store.deleteNote(id); }
 function noteAdd() {
   const text = String(ui.notes.draft || '').trim();
@@ -2958,7 +2975,7 @@ function offlineSettingsHTML() {
   if (S.mode === 'local' && S.why === 'copy') {
     return '<div class="audio-sec"><div class="lbl">Offline copy</div><p>This copy runs without Wi-Fi and saves in this browser. Back online, export your changes and import them into ZERØ GAP.</p><div class="row"><button class="btn sm hud" type="button" data-act="off-export">EXPORT CHANGES</button></div></div>';
   }
-  if (isApp()) return appSettingsHTML();
+  if (isApp()) return syncSettingsHTML() + appSettingsHTML();
   if (S.mode !== 'db') return '';
   return '<div class="audio-sec"><div class="lbl">Offline</div>' +
     '<p>ZERØ GAP now has its own app that works offline on your phone. Move your data: EXPORT BACKUP here, then RESTORE BACKUP in the app.</p><div class="row" style="margin-bottom:6px"><button class="btn sm solid" type="button" data-act="backup-export">EXPORT BACKUP FOR THE APP</button><a class="btn sm hud" href="' + APP_URL + '" target="_blank" rel="noopener">OPEN THE APP ↗</a></div>' +
@@ -2970,7 +2987,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.3.0';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3564,7 +3581,7 @@ function anchorAdd(cat) {
   anchorSave(all.concat([{ id: uid('r'), cat: cat, text: text.slice(0, 600), pin: false, ord: ord, at: Date.now() }]));
   focusSoon('anc-new-' + cat);
 }
-function anchorUpdate(id, patch) { anchorSave(anchorReasons().map(function (r) { return r.id === id ? Object.assign({}, r, patch) : r; })); }
+function anchorUpdate(id, patch) { anchorSave(anchorReasons().map(function (r) { return r.id === id ? Object.assign({}, r, patch, { upd: Date.now() }) : r; })); }
 function anchorMove(id, dir) {
   const r = anchorReasons().find(function (x) { return x.id === id; }); if (!r) return;
   const list = anchorSorted(r.cat).filter(function (x) { return !!x.pin === !!r.pin; }), i = list.findIndex(function (x) { return x.id === id; }), j = i + dir;
@@ -3774,6 +3791,377 @@ document.addEventListener('keydown', function (ev) {
   if (ev.key === 'Enter' && !ev.shiftKey && !COARSE) { ev.preventDefault(); anchorAdd(t.id.replace('anc-new-', '')); }
 });
 
+/* ================= WEEK PLAN (mini deadlines) ================= */
+/* Assignments due this week get their own mini deadlines, spread across Mon–Fri and well before the real deadline.
+   Bigger ones are split into steps (Start → Finish) on different days. The plan stays put: new assignments are
+   slotted in, unfinished steps from earlier days move to today, and REPLAN rebuilds the rest of the week. */
+const PLAN_STEPS = { 1: ['Do it'], 2: ['Start', 'Finish'], 3: ['Start', 'Keep going', 'Finish'] };
+function pDay(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + (n || 0), 12); }
+function planWeekStart() {
+  const n = new Date(), dow = n.getDay(), mon = pDay(n, -((dow + 6) % 7));
+  return dow === 6 || dow === 0 ? pDay(mon, 7) : mon;
+}
+function planStartKey() { const n = new Date(); return dayKey((n.getHours() >= 20 ? pDay(n, 1) : pDay(n)).getTime()); }
+function planCandidates(weekMon) {
+  const todayK = dayKey(Date.now()), endK = dayKey(pDay(weekMon, 7).getTime());
+  return Object.keys(S.ops).map(function (id) { return S.ops[id]; }).filter(function (o) {
+    return o && !o.repeat && o.status !== 'closed' && isDate(o.due) && o.due <= endK && (o.src === 'canvas' || whyOf(o).area === 'school') && (o.due >= todayK || o.src !== 'canvas');
+  });
+}
+function planEst(op) { return clampInt(op.est || guessEffort(op.title).est, 1, 6, 2); }
+function planLoad(days, items) {
+  const load = {};
+  days.forEach(function (k) {
+    let ev = 0;
+    try { agenda().forEach(function (x) { if (!x.a && dayKey(x.s) === k) ev++; }); } catch (e) {}
+    load[k] = ev * .4;
+  });
+  items.forEach(function (it) { if (load[it.day] != null && !it.done) load[it.day] += it.w || 1; });
+  return load;
+}
+function planPlace(op, items, weekMon, startK, keepFrom) {
+  const est = planEst(op), n = est >= 4 ? 3 : est >= 3 ? 2 : 1, w = est / n, labels = PLAN_STEPS[n];
+  const work = [0, 1, 2, 3, 4].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k) { return k >= startK; });
+  let allowed = work.filter(function (k) { return k < op.due; });
+  if (!allowed.length) {
+    const all = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k) { return k >= startK && k < op.due; });
+    allowed = all.length ? all.slice(-1) : [startK];
+  }
+  const load = planLoad(allowed, items);
+  const out = [];
+  let prev = -1;
+  for (let i = keepFrom || 0; i < n; i++) {
+    const left = n - i, hi = Math.max(prev + 1, allowed.length - left), lo = Math.min(prev + 1, allowed.length - 1);
+    let best = -1;
+    for (let j = lo; j <= Math.min(hi, allowed.length - 1); j++) if (best < 0 || load[allowed[j]] < load[allowed[best]] - 1e-9) best = j;
+    if (best < 0) best = Math.max(0, Math.min(allowed.length - 1, prev));
+    load[allowed[best]] += w; prev = best;
+    out.push({ id: op.id + '#' + i, op: op.id, i: i, n: n, step: labels[i], day: allowed[best], due: op.due, w: w, done: false });
+  }
+  return out;
+}
+function planSync(force) {
+  if (!S.ready || !S.hq || !store) return;
+  const weekMon = planWeekStart(), wk = dayKey(weekMon.getTime()), startK = planStartKey(), cur = S.hq.plan;
+  let items = cur && cur.week === wk && !force ? clone(cur.items || []) : [];
+  if (force && cur && cur.week === wk) items = clone(cur.items || []).filter(function (it) { return it.done; });
+  const cand = planCandidates(weekMon), byId = {};
+  cand.forEach(function (o) { byId[o.id] = o; });
+  items = items.filter(function (it) { const o = S.ops[it.op]; return o && (it.done || o.status === 'closed' || (byId[it.op] && byId[it.op].due === it.due)); });
+  items.forEach(function (it) { const o = S.ops[it.op]; if (o && o.status === 'closed' && !it.done) { it.done = true; it.auto = true; } });
+  const moved = [];
+  items = items.filter(function (it) { if (!it.done && it.day < startK) { moved.push(it); return false; } return true; });
+  const planned = new Set(items.map(function (it) { return it.op; }));
+  const rollOps = {};
+  moved.forEach(function (it) { if (!rollOps[it.op] || it.i < rollOps[it.op]) rollOps[it.op] = it.i; });
+  const todo = cand.filter(function (o) { return !planned.has(o.id) || rollOps[o.id] != null; })
+    .sort(function (a, b) { return (a.due < b.due ? -1 : a.due > b.due ? 1 : 0) || planEst(b) - planEst(a); });
+  todo.forEach(function (o) {
+    items = items.filter(function (it) { return it.op !== o.id || it.done; });
+    const from = items.filter(function (it) { return it.op === o.id && it.done; }).length;
+    items = items.concat(planPlace(o, items, weekMon, startK, from));
+  });
+  items.sort(function (a, b) { return (a.day < b.day ? -1 : a.day > b.day ? 1 : 0) || (a.due < b.due ? -1 : a.due > b.due ? 1 : 0) || a.i - b.i; });
+  const next = { week: wk, items: items };
+  if (stable(next.items) === stable(cur && cur.week === wk ? cur.items : null) && cur && cur.week === wk) return;
+  next.at = Date.now();
+  patchHQ({ plan: next });
+}
+let planT = 0;
+function schedulePlan() { clearTimeout(planT); planT = setTimeout(function () { try { planSync(false); } catch (e) { console.warn('[zerogap] plan', e); } }, 1200); }
+function planItems() { const p = S.hq && S.hq.plan; return p && p.week === dayKey(planWeekStart().getTime()) ? (p.items || []) : []; }
+function planItemDone(it) { const o = S.ops[it.op]; return !!(it.done || (o && o.status === 'closed')); }
+function planToday() {
+  const k = dayKey(Date.now());
+  return planItems().filter(function (it) { const o = S.ops[it.op]; return o && o.status !== 'closed' && !it.done && it.day <= k; });
+}
+function planMini(op) { const its = planItems().filter(function (it) { return it.op === op.id && !planItemDone(it); }); return its.length ? its[its.length - 1].day : ''; }
+function planTick(id) {
+  const p = S.hq && S.hq.plan; if (!p) return;
+  const items = clone(p.items || []), it = items.find(function (x) { return x.id === id; }); if (!it) return;
+  const o = S.ops[it.op];
+  if (planItemDone(it)) {
+    it.done = false; it.auto = false; it.upd = Date.now();
+    if (o && o.status === 'closed' && it.i === it.n - 1) saveOp(Object.assign({}, o, { status: 'open', closedAt: null, used: null }));
+    patchHQ({ plan: Object.assign({}, p, { items: items, at: Date.now() }) }); render(); return;
+  }
+  it.done = true; it.doneAt = it.upd = Date.now();
+  patchHQ({ plan: Object.assign({}, p, { items: items, at: Date.now() }) });
+  if (o && it.i === it.n - 1 && o.status !== 'closed') { closeOp(o.id); return; }
+  Sfx.play('blip');
+  toast('Mini deadline done · ' + it.step, o ? o.title : '', 'good');
+  render();
+}
+function planPanelHTML() {
+  const items = planItems();
+  if (!items.length) return '';
+  const weekMon = planWeekStart(), todayK = dayKey(Date.now()), left = items.filter(function (it) { return !planItemDone(it); }).length;
+  const days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k, i) { return i < 5 || items.some(function (it) { return it.day === k; }); });
+  const rows = days.map(function (k) {
+    const its = items.filter(function (it) { return it.day === k; }), past = k < todayK;
+    const label = (k === todayK ? 'TODAY · ' : '') + shortDay(k).toUpperCase().replace(/^TODAY$/, DOW[parseDay(k).getDay()] + ' ' + parseDay(k).getDate());
+    return '<div class="pl-day' + (k === todayK ? ' today' : '') + (past ? ' past' : '') + '"><div class="lbl">' + label + '</div>' +
+      (its.length ? '<ul class="pl-list">' + its.map(function (it) {
+        const o = S.ops[it.op] || {}, done = planItemDone(it);
+        return '<li class="' + (done ? 'done' : '') + '"><button class="pl-chk" type="button" data-act="plan-tick" data-id="' + esc(it.id) + '" aria-pressed="' + done + '" aria-label="' + (done ? 'Undo: ' : 'Done: ') + esc(it.step + ' ' + (o.title || '')) + '">' + (done ? '✓' : '') + '</button>' +
+          '<div class="pl-t"><b>' + esc(it.step) + ' · ' + esc(o.title || 'Assignment') + '</b><span>' + (o.course ? esc(courseLabel(o.course)) + ' · ' : '') + 'real deadline ' + esc(shortDay(it.due)) + (it.n > 1 ? ' · step ' + (it.i + 1) + ' of ' + it.n : '') + '</span></div></li>';
+      }).join('') + '</ul>' : '<p class="pl-free">' + (past ? '—' : 'Free') + '</p>') + '</div>';
+  }).join('');
+  return '<section class="panel a-plan" aria-label="This week"><div class="ph"><span class="ph-t">This week · mini deadlines</span><span class="ph-m">' + (left ? left + ' TO GO' : 'ALL DONE') + '</span></div>' +
+    '<div class="pl-days">' + rows + '</div><div class="row" style="margin-top:10px"><button class="link" type="button" data-act="plan-replan">REPLAN THE REST OF THE WEEK</button></div></section>';
+}
+
+/* ================= SYNC (encrypted, through your private GitHub repo) ================= */
+/* Each device encrypts its data with your passphrase (AES-GCM, key from PBKDF2) before it leaves the device and
+   stores it as one file in a private repo you own. Devices merge change by change against the last version they
+   synced, so edits on two devices don't overwrite each other. The token and key stay on this device only.
+   The same repo can hold canvas.json, written by a scheduled GitHub Action from your Canvas calendar feed. */
+const SYNC_CFG = 'zerogap.sync.v1', SYNC_BASE = 'zerogap.sync.base', SYNC_FILE = 'zerogap.sync.json', CANVAS_FILE = 'canvas.json';
+const SY = { busy: false, dirty: false, applying: false, t: 0, msg: '', err: '' };
+const te = new TextEncoder(), td = new TextDecoder();
+function syncCfg() { try { const c = JSON.parse(localStorage.getItem(SYNC_CFG) || 'null'); return c && c.repo && c.token && c.key ? c : null; } catch (e) { return null; } }
+function syncCfgSave(c) { try { if (c) localStorage.setItem(SYNC_CFG, JSON.stringify(c)); else localStorage.removeItem(SYNC_CFG); } catch (e) {} }
+function syncBaseRead() { try { return JSON.parse(localStorage.getItem(SYNC_BASE) || 'null'); } catch (e) { return null; } }
+function syncBaseSave(d) { try { if (d) localStorage.setItem(SYNC_BASE, JSON.stringify(d)); else localStorage.removeItem(SYNC_BASE); } catch (e) {} }
+function bytesB64(buf) { const a = new Uint8Array(buf); let s = ''; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); }
+function b64Bytes(s) { const bin = atob(String(s || '').replace(/\s+/g, '')); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+async function gz(bytes, back) {
+  if (typeof CompressionStream === 'undefined') return null;
+  const s = new Blob([bytes]).stream().pipeThrough(back ? new DecompressionStream('gzip') : new CompressionStream('gzip'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+async function syncDerive(pass, salt) {
+  const base = await crypto.subtle.importKey('raw', te.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+}
+async function syncKey(c) { return crypto.subtle.importKey('raw', b64Bytes(c.key), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); }
+async function sealData(key, salt, data) {
+  let bytes = te.encode(JSON.stringify(data)), z = '';
+  const packed = await gz(bytes).catch(function () { return null; }); if (packed) { bytes = packed; z = 'gzip'; }
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, bytes);
+  return { kind: 'zerogap-sync-v1', salt: salt, iv: bytesB64(iv), z: z, ct: bytesB64(ct), at: Date.now() };
+}
+async function openData(key, f) {
+  const pt = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64Bytes(f.iv) }, key, b64Bytes(f.ct)));
+  const bytes = f.z === 'gzip' ? await gz(pt, true) : pt;
+  return JSON.parse(td.decode(bytes));
+}
+function ghErr(status, what) { const e = new Error(what || ('GitHub said ' + status)); e.status = status; return e; }
+async function ghFetch(c, method, url, body) {
+  let r;
+  try {
+    r = await fetch('https://api.github.com/repos/' + c.repo + url, { method: method, cache: 'no-store', headers: { 'Authorization': 'Bearer ' + c.token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, body: body ? JSON.stringify(body) : undefined });
+  } catch (e) { throw ghErr(0, 'No connection'); }
+  return r;
+}
+async function ghGet(c, path) {
+  const r = await ghFetch(c, 'GET', '/contents/' + path);
+  if (r.status === 404) {
+    const repo = await ghFetch(c, 'GET', '');
+    if (repo.status === 404) throw ghErr(404, 'Repo not found, or the token cannot see it');
+    if (repo.status === 401) throw ghErr(401, 'Token was rejected');
+    return null;
+  }
+  if (r.status === 401) throw ghErr(401, 'Token was rejected');
+  if (r.status === 403) throw ghErr(403, 'Token does not have access (needs Contents: read and write)');
+  if (!r.ok) throw ghErr(r.status);
+  const j = await r.json();
+  let b64 = j.content;
+  if (!b64 && j.sha) { const br = await ghFetch(c, 'GET', '/git/blobs/' + j.sha); if (!br.ok) throw ghErr(br.status); b64 = (await br.json()).content; }
+  return { sha: j.sha, text: td.decode(b64Bytes(b64 || '')) };
+}
+async function ghPut(c, path, text, sha, msg) {
+  const r = await ghFetch(c, 'PUT', '/contents/' + path, { message: msg || 'Sync from ZERØ GAP', content: bytesB64(te.encode(text)), sha: sha || undefined });
+  if (r.status === 409 || r.status === 422) throw ghErr(409, 'Changed on another device');
+  if (r.status === 401) throw ghErr(401, 'Token was rejected');
+  if (r.status === 403) throw ghErr(403, 'Token does not have access (needs Contents: read and write)');
+  if (!r.ok) throw ghErr(r.status);
+  return (await r.json()).content.sha;
+}
+/* three-way merge: keep whichever side changed since the last sync; if both did, the newer edit wins */
+function m3(b, l, r, both) { const sb = stable(b), sl = stable(l), sr = stable(r); if (sl === sr) return l; if (sl === sb) return r; if (sr === sb) return l; return both ? both(l, r) : l; }
+function stampOf(x) { return x ? (x.upd || x.updated || x.closedAt || x.at || x.lastSync || x.created || 0) : 0; }
+function newer(l, r) { if (l == null) return r; if (r == null) return l; return stampOf(r) > stampOf(l) ? r : l; }
+function mergeMap(b, l, r, both) {
+  b = b || {}; l = l || {}; r = r || {};
+  const out = {};
+  Object.keys(Object.assign({}, b, l, r)).forEach(function (k) { const v = m3(b[k], l[k], r[k], both); if (v != null) out[k] = v; });
+  return out;
+}
+/* week plan: same week → merge the steps one by one (a ticked step on either device stays ticked); different weeks → the later week */
+function mergePlan(b, l, r) {
+  if (!l || !l.items) return r || l; if (!r || !r.items) return l;
+  if (l.week !== r.week) return l.week > r.week ? l : r;
+  const idx = function (p) { const m = {}; ((p && p.week === l.week && p.items) || []).forEach(function (it) { if (it && it.id) m[it.id] = it; }); return m; };
+  const items = mergeMap(idx(b), idx(l), idx(r), function (x, y) { return (y.upd || y.doneAt || 0) > (x.upd || x.doneAt || 0) ? y : x; });
+  const newerSide = (r.at || 0) > (l.at || 0) ? idx(r) : idx(l), byOp = {};
+  Object.keys(items).forEach(function (k) { const it = items[k]; (byOp[it.op] = byOp[it.op] || []).push(it); });
+  let out = [];
+  Object.keys(byOp).forEach(function (op) {
+    const its = byOp[op], mixed = its.some(function (it) { return it.n !== its[0].n; });
+    out = out.concat(mixed ? Object.keys(newerSide).map(function (k) { return newerSide[k]; }).filter(function (it) { return it.op === op; }) : its);
+  });
+  out.sort(function (a, c) { return (a.day < c.day ? -1 : a.day > c.day ? 1 : 0) || (a.due < c.due ? -1 : a.due > c.due ? 1 : 0) || a.i - c.i; });
+  return { week: l.week, items: out, at: Math.max(l.at || 0, r.at || 0) };
+}
+function syncMerge(base, local, remote) {
+  base = base || {}; local = local || {}; remote = remote || {};
+  const out = {};
+  ['ops', 'notes', 'cal'].forEach(function (k) { out[k] = mergeMap(base[k], local[k], remote[k], newer); });
+  const bl = base.log || {}, ll = local.log || {}, rl = remote.log || {};
+  out.log = {};
+  Object.keys(Object.assign({}, bl, ll, rl)).forEach(function (d) {
+    const v = m3(bl[d], ll[d], rl[d], function (l, r) {
+      const bd = bl[d] || {}; l = l || {}; r = r || {};
+      return { date: d, blocks: mergeMap(bd.blocks, l.blocks, r.blocks, newer), routes: mergeMap(bd.routes, l.routes, r.routes, newer) };
+    });
+    if (v) out.log[d] = v;
+  });
+  const bh = base.hq, lh = local.hq, rh = remote.hq;
+  if (!lh || !rh) out.hq = m3(bh, lh, rh, function (l, r) { return l || r; });
+  else {
+    const firstRemote = !bh && (rh.created || Infinity) < (lh.created || Infinity);
+    out.hq = {};
+    Object.keys(Object.assign({}, bh || {}, lh, rh)).forEach(function (k) {
+      const v = m3((bh || {})[k], lh[k], rh[k], function (l, r) { return k === 'plan' ? mergePlan((bh || {}).plan, l, r) : firstRemote ? r : l; });
+      if (v !== undefined) out.hq[k] = v;
+    });
+  }
+  out.feed = m3(base.feed, local.feed, remote.feed, newer);
+  const ar = function (d) { const m = {}; ((d && d.reasons) || []).forEach(function (x) { if (x && x.id) m[x.id] = x; }); return m; };
+  if (!local.anchor && !remote.anchor) out.anchor = null;
+  else {
+    const reasons = mergeMap(ar(base.anchor), ar(local.anchor), ar(remote.anchor), newer);
+    out.anchor = { v: 1, reasons: Object.keys(reasons).map(function (k) { return reasons[k]; }), at: Math.max((local.anchor && local.anchor.at) || 0, (remote.anchor && remote.anchor.at) || 0) };
+  }
+  return out;
+}
+function syncDirty() { if (SY.applying || !syncCfg()) return; SY.dirty = true; clearTimeout(SY.t); SY.t = setTimeout(function () { syncNow(false); }, 4000); }
+async function syncNow(manual, tries) {
+  const c = syncCfg();
+  if (!c || !isApp() || !store || !store.dump || !S.ready) return;
+  if (SY.busy) { if (manual) toast('Already syncing', '', 'info'); return; }
+  if (navigator.onLine === false) { if (manual) toast('No connection', 'It syncs as soon as you are back online.', 'warn'); return; }
+  SY.busy = true; SY.dirty = false; scheduleRender();
+  try {
+    const key = await syncKey(c), local = store.dump(), base = syncBaseRead();
+    const remote = await ghGet(c, SYNC_FILE);
+    let merged = local, remoteData = null;
+    if (remote && remote.sha !== c.sha) {
+      remoteData = await openData(key, JSON.parse(remote.text));
+      merged = syncMerge(c.sha ? base : null, local, remoteData);
+    }
+    if (stable(merged) !== stable(local)) { SY.applying = true; try { await store.replaceAll(merged); } finally { SY.applying = false; } }
+    const same = remote && remote.sha === c.sha ? stable(merged) === stable(base) : remoteData && stable(merged) === stable(remoteData);
+    if (!same) c.sha = await ghPut(c, SYNC_FILE, JSON.stringify(await sealData(key, c.salt, merged)), remote && remote.sha, 'Sync from ' + (COARSE ? 'phone' : 'computer'));
+    else if (remote) c.sha = remote.sha;
+    syncBaseSave(merged);
+    try {
+      const cv = await ghGet(c, CANVAS_FILE);
+      if (cv && cv.sha !== c.canvasSha) { const j = JSON.parse(cv.text), evs = Array.isArray(j.events) ? j.events : []; canvasApply(evs); c.canvasSha = cv.sha; c.canvasN = evs.length; c.canvasAt = j.at ? Date.parse(j.at) || Date.now() : Date.now(); }
+      c.canvasOn = !!cv; if (!cv) c.canvasN = 0;
+    } catch (e) { console.warn('[zerogap] canvas read', e && e.message); }
+    c.lastAt = Date.now(); c.err = '';
+    syncCfgSave(c); SY.err = '';
+    if (manual) toast('Synced', 'This device is up to date.', 'good');
+  } catch (e) {
+    if (e && e.status === 409 && (tries || 0) < 2) { SY.busy = false; return syncNow(manual, (tries || 0) + 1); }
+    const msg = (e && e.message) || 'Sync failed';
+    const cc = syncCfg(); if (cc) { cc.err = e && e.status ? msg : ''; syncCfgSave(cc); }
+    SY.err = e && e.status ? msg : '';
+    if (manual || (e && (e.status === 401 || e.status === 403 || e.status === 404))) toast('Sync paused', msg + (e && e.status === 401 ? '. Paste a new token in Settings.' : '.'), 'warn');
+    console.warn('[zerogap] sync', msg);
+  } finally { SY.busy = false; scheduleRender(); }
+}
+async function syncConnect() {
+  const f = ui.sync || {}, repo = String(f.repo || '').trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/+$/, ''), token = String(f.token || '').trim(), pass = String(f.pass || '');
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) { toast('Check the repo', 'Write it as your-username/repo-name.', 'warn'); return; }
+  if (!token) { toast('Paste your token', 'The fine-grained token from GitHub.', 'warn'); return; }
+  if (pass.length < 8) { toast('Passphrase too short', 'Use at least 8 characters. The same one on every device.', 'warn'); return; }
+  if (!(window.crypto && crypto.subtle)) { toast('This browser cannot encrypt', 'Open ZERØ GAP from the https link.', 'bad'); return; }
+  ui.sync.busy = true; render();
+  try {
+    const probe = { repo: repo, token: token };
+    const remote = await ghGet(probe, SYNC_FILE);
+    let salt, key;
+    if (remote) {
+      const file = JSON.parse(remote.text);
+      salt = file.salt; key = await syncDerive(pass, b64Bytes(salt));
+      try { await openData(key, file); } catch (e) { throw ghErr(-1, 'Wrong passphrase for the data already in that repo'); }
+    } else {
+      salt = bytesB64(crypto.getRandomValues(new Uint8Array(16))); key = await syncDerive(pass, b64Bytes(salt));
+    }
+    syncCfgSave({ repo: repo, token: token, salt: salt, key: bytesB64(await crypto.subtle.exportKey('raw', key)), sha: '', lastAt: 0 });
+    syncBaseSave(null);
+    ui.sync = { repo: repo, token: '', pass: '', busy: false };
+    toast('Sync connected', remote ? 'Merging with your other device…' : 'First copy goes up now.', 'good');
+    render();
+    await syncNow(true);
+  } catch (e) {
+    ui.sync.busy = false;
+    toast('Could not connect', (e && e.message) || 'Try again.', 'bad');
+    render();
+  }
+}
+function syncDisconnect() { syncCfgSave(null); syncBaseSave(null); SY.err = ''; ui.sync = { repo: '', token: '', pass: '', busy: false, confirm: false }; toast('Sync turned off on this device', 'Your data stays here. Nothing was deleted.', 'info'); render(); }
+function canvasFeedMsg() { const c = syncCfg(); return c && c.canvasOn ? 'Canvas comes in through sync. Last update ' + (c.canvasAt ? calAgo(c.canvasAt).toLowerCase() : 'recently') + '. New assignments land on your board and in this week’s plan.' : 'Canvas assignments can come in automatically. Set it up in Settings → Sync between devices.'; }
+function syncDefaultRepo() { const h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/zero-gap-data' : ''; }
+function canvasApply(events) {
+  const F = Object.assign({ horizon: 10 }, clone(S.feed) || {});
+  F.enabled = true; F.seen = F.seen || {}; F.courses = F.courses || {};
+  const todayK = dayKey(Date.now());
+  let created = 0, moved = 0;
+  events.forEach(function (ev) { const ps = parseSummary(ev && ev.summary); if (ps.course && !F.courses[ps.course]) { const m = ps.title.match(/\b([A-Z]{3})\s?(\d{4}[A-Z]?)\b/); if (m) F.courses[ps.course] = m[1] + ' ' + m[2]; } });
+  events.forEach(function (ev) {
+    if (!ev || !ev.id) return;
+    const due = eventDue(ev); if (!due || due < todayK) return;
+    const ps = parseSummary(ev.summary); if (!ps.title) return;
+    const id = 'cv' + String(ev.id).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 180), ex = S.ops[id];
+    if (!ex) {
+      if (F.seen[ev.id]) return;
+      const g = guessEffort(ps.title);
+      saveOp({ id: id, title: ps.title.slice(0, 140), tier: 2, res: g.res, est: g.est, due: due, code: codename(), status: 'open', created: Date.now() + created, closedAt: null, used: null, src: 'canvas', ext: String(ev.id), course: ps.course, feedDue: due, link: String(ev.htmlLink || ''), autoTier: true });
+      F.seen[ev.id] = due; created++;
+    } else if (ex.status !== 'closed' && ex.feedDue && ex.feedDue !== due) {
+      const upd = Object.assign({}, ex, { feedDue: due }); if (ex.due === ex.feedDue) upd.due = due;
+      saveOp(upd); moved++;
+    }
+  });
+  const cutoff = dayKey(Date.now() - 45 * 86400000);
+  Object.keys(F.seen).forEach(function (k) { if (!isDate(F.seen[k]) || F.seen[k] < cutoff) delete F.seen[k]; });
+  F.lastSync = Date.now(); F.lastCount = events.length; F.via = 'github';
+  saveFeed(F);
+  if (created) toast(created + ' new from Canvas', 'Added to your board and this week’s plan.', 'good');
+  else if (moved) toast(moved + ' due date' + (moved === 1 ? '' : 's') + ' moved in Canvas', 'Your plan is updated.', 'info');
+  schedulePlan();
+}
+function syncSettingsHTML() {
+  const c = syncCfg(), f = ui.sync || (ui.sync = { repo: '', token: '', pass: '' });
+  if (c) {
+    return '<div class="audio-sec"><div class="lbl">Sync between devices</div>' +
+      '<p>' + (SY.busy ? 'Syncing now…' : c.err ? 'Paused: ' + esc(c.err) + '.' : c.lastAt ? 'Synced ' + calAgo(c.lastAt).toLowerCase() + ' with <b>' + esc(c.repo) + '</b>. Encrypted with your passphrase.' : 'Connected to <b>' + esc(c.repo) + '</b>.') + '</p>' +
+      '<p class="small">Canvas: ' + (c.canvasOn ? 'updated ' + (c.canvasAt ? calAgo(c.canvasAt).toLowerCase() : 'recently') + ' · ' + (c.canvasN || 0) + ' items in the feed.' : 'not set up yet (add the CANVAS_FEED_URL secret to the repo).') + '</p>' +
+      '<div class="row"><button class="btn sm hud" type="button" data-act="sync-now"' + (SY.busy ? ' disabled' : '') + '>SYNC NOW</button>' +
+      (f.confirm ? '<button class="btn sm danger" type="button" data-act="sync-off">TAP AGAIN TO TURN OFF</button>' : '<button class="btn sm" type="button" data-act="sync-off">TURN OFF ON THIS DEVICE</button>') + '</div></div>';
+  }
+  if (!f.repo) f.repo = syncDefaultRepo();
+  return '<div class="audio-sec"><div class="lbl">Sync between devices</div>' +
+    '<p>Keeps this device and your others in step through a private GitHub repo you own. Everything is encrypted with your passphrase before it leaves the device.</p>' +
+    '<div class="field"><label for="sync-repo">Private repo</label><input class="inp" id="sync-repo" data-bind="sync.repo" placeholder="your-username/zero-gap-data" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(f.repo) + '"></div>' +
+    '<div class="field"><label for="sync-token">GitHub token (fine-grained, Contents: read and write)</label><input class="inp" id="sync-token" type="password" data-bind="sync.token" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(f.token) + '"></div>' +
+    '<div class="field"><label for="sync-pass">Passphrase (same on every device)</label><input class="inp" id="sync-pass" type="password" data-bind="sync.pass" autocomplete="new-password" value="' + esc(f.pass) + '"></div>' +
+    '<div class="row"><button class="btn sm solid" type="button" data-act="sync-connect"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? 'CONNECTING…' : 'CONNECT') + '</button></div>' +
+    '<p class="small">Write the passphrase down somewhere safe. Without it, the synced copy cannot be opened, not even by you.</p></div>';
+}
+function initSync() {
+  if (!isApp()) return;
+  window.addEventListener('online', function () { syncNow(false); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') syncNow(false); });
+  setInterval(function () { if (document.visibilityState === 'visible') syncNow(false); }, 5 * 60000);
+  const wait = setInterval(function () { if (S.ready) { clearInterval(wait); syncNow(false); } }, 500);
+}
+
 /* ================= TOASTS ================= */
 let toastSeq = 0;
 function toast(title, body, kind) {
@@ -3823,6 +4211,7 @@ function opMetaHTML(op, D) {
   let out = (op.course ? '<span class="cchip">' + esc(courseLabel(op.course)) + '</span>' : '') + resHTML(op.res || 3);
   if (op.est) out += '<span>' + used + '/' + op.est + ' WIN</span>'; else if (used) out += '<span>' + used + ' WIN</span>';
   if (op.due) { const n = daysUntil(op.due); out += '<span class="' + (n !== null && n <= 0 ? 'due-hot' : n !== null && n <= 2 ? 'due-warm' : '') + '">' + tminus(op.due) + '</span>'; }
+  const mini = op.status !== 'closed' ? planMini(op) : ''; if (mini) out += '<span class="mini-dl">MINI · ' + esc(shortDay(mini).toUpperCase()) + '</span>';
   return out;
 }
 function cellsHTML(blocks, quota, newId) {
@@ -3954,7 +4343,7 @@ function viewHQ(D) {
   const ns = (S.sugg || []).length;
   const intel = '<section class="panel a-intel" aria-label="Board"><div class="ph"><span class="ph-t">Board</span><a class="link ph-m" href="#ops">OPEN BOARD →</a></div><ul class="intel">' + rows + '</ul>' + (D.open[0].length ? '<button class="btn amber" type="button" data-act="triage">SORT ' + D.open[0].length + ' NEW</button>' : '') +
     (ns ? '<a class="btn hud" href="#ops">REVIEW ' + ns + ' CLAUDE TIP' + (ns === 1 ? '' : 'S') + '</a>' : '') + '</section>';
-  return '<div class="hq"><div class="hq-col">' + you + deploy + notesPanelHTML() + '</div><div class="hq-col">' + schedPanelHTML() + feedPanelHTML(D) + intel + '</div></div>';
+  return '<div class="hq"><div class="hq-col">' + you + deploy + planPanelHTML() + notesPanelHTML() + '</div><div class="hq-col">' + schedPanelHTML() + feedPanelHTML(D) + intel + '</div></div>';
 }
 function opCardHTML(op, D) {
   if (op.repeat) return rtCardHTML(op, D);
@@ -4473,7 +4862,7 @@ function onEscape() {
   if (t) { ui.overlay = null; ui.secured = null; render(); }
 }
 const ACT_SFX = { manual: 'open', settings: 'open', dump: 'open', pick: 'open', triage: 'open', 'purge-open': 'warn', 'close-mod': 'close', 'promo-ok': 'close', dismiss: 'close', 'purge-cancel': 'close', 'crs-cancel': 'close', 'route-abort': 'abort', 'away-discard': 'abort', mins: 'blip', 'tri-res': 'blip', 'en-quota': 'blip', 'set-q': 'blip' };
-const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close', 'past-ok', 'anchor', 'urge', 'urge-next', 'urge-close', 'urge-act', 'urge-ok', 'urge-cancel', 'anc-add', 'anc-pin', 'anc-edit', 'anc-cancel', 'anc-save', 'anc-up', 'anc-down', 'anc-del', 'anc-export', 'anc-import', 'anc-ex', 'anc-ex-add', 'anc-ex-all', 'anc-ex-every']);
+const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close', 'past-ok', 'anchor', 'urge', 'urge-next', 'urge-close', 'urge-act', 'urge-ok', 'urge-cancel', 'anc-add', 'anc-pin', 'anc-edit', 'anc-cancel', 'anc-save', 'anc-up', 'anc-down', 'anc-del', 'anc-export', 'anc-import', 'anc-ex', 'anc-ex-add', 'anc-ex-all', 'anc-ex-every', 'plan-tick']);
 document.addEventListener('click', function (ev) {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
@@ -4631,6 +5020,11 @@ document.addEventListener('click', function (ev) {
     case 'anc-ex-every': { const pairs = []; ANCHOR_CATS.forEach(function (c) { anchorExLeft(c.id).forEach(function (t) { pairs.push([c.id, t]); }); }); const n = anchorAddTexts(pairs); if (n) toast('Added ' + n + ' examples', 'Your own reasons are untouched. Edit or delete any that do not fit you.', 'good'); break; }
     case 'anc-export': anchorExport(); break;
     case 'anc-import': { const inp = document.getElementById('anc-in'); if (inp) inp.click(); break; }
+    case 'plan-tick': planTick(id); break;
+    case 'plan-replan': planSync(true); toast('Week replanned', 'Unfinished steps are spread over the days left.', 'info'); render(); break;
+    case 'sync-connect': syncConnect(); break;
+    case 'sync-now': syncNow(true); break;
+    case 'sync-off': ui.sync = ui.sync || {}; if (ui.sync.confirm) syncDisconnect(); else { ui.sync.confirm = true; render(); setTimeout(function () { if (ui.sync) { ui.sync.confirm = false; scheduleRender(); } }, 4000); } break;
     case 'past': pastOpen(id); break;
     case 'past-day': if (ui.past) { ui.past.k = v; render(); } break;
     case 'past-ok': pastApply(); break;
@@ -4750,6 +5144,7 @@ initSyncInput();
 initAnchorInput();
 initDownloads();
 initApp();
+initSync();
 window.addEventListener('online', function () { if (store && store.flush) store.flush(); render(); });
 window.addEventListener('offline', function () { render(); });
 setInterval(function () { if (store && store.flush && obCount()) store.flush(); }, 20000);
