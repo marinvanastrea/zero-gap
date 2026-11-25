@@ -820,6 +820,55 @@ textarea.inp#why-text{min-height:96px}
 .fx-list li{display:flex;align-items:center;gap:10px}
 .fx-list .fg{flex:none;width:52px;border-radius:8px;background:var(--panel-2)}
 @media (max-height:640px){.fx-ring{width:min(70vw,40vh,300px)}}
+/* ===== ANCHOR (private): darker, dimmer, calm ===== */
+.anc{--a-ac:#7f93c9}
+.anc .eyebrow{color:var(--a-ac)}
+.anc-now{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:84px;padding:0 20px;border-radius:18px;background:#18213d;color:#e3e8f5;font:800 22px/1.15 var(--f-ui);box-shadow:inset 0 0 0 1px #2c3a63}
+.anc-now:hover,.anc-now:focus-visible{background:#1d284a}
+.anc-now svg{flex:none;width:26px;height:26px;color:var(--a-ac)}
+.anc-cat .ph-t::before{background:var(--a-ac)}
+.anc-list{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.anc-item{display:grid;gap:6px;padding:12px 12px 6px;border-radius:12px;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--line)}
+.anc-item.pin{box-shadow:inset 0 0 0 1px #33426e,inset 3px 0 0 var(--a-ac)}
+.anc-t{margin:0;font-size:15.5px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.anc-acts{display:flex;flex-wrap:wrap;gap:0 16px}
+.anc-acts .link{min-height:40px;min-width:28px;justify-content:center;color:var(--dim)}
+.anc-acts .link:disabled{opacity:.3}
+.anc-acts .link.danger{color:var(--t1)}
+.anc-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+textarea.inp.anc-in{min-height:92px;padding:10px 12px;line-height:1.4}
+textarea.inp.anc-edit{min-height:96px}
+.ibtn.anc-btn svg{width:19px;height:19px}
+.urge{position:fixed;inset:0;z-index:75;overflow:auto;display:flex;flex-direction:column;background:#020308;color:#a9b1c3;padding:calc(env(safe-area-inset-top,0px) + 14px) max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(18px,env(safe-area-inset-left,0px))}
+.urge-in{width:100%;max-width:520px;margin:0 auto;flex:1;display:flex;flex-direction:column;gap:12px}
+.urge-top{display:flex;align-items:center;gap:12px}
+.urge-timer{display:flex;align-items:center;gap:12px;min-width:0}
+.urge-ring{flex:none;width:56px;height:56px}
+.urge-ring svg{display:block;width:100%;height:100%}
+.urge-track{fill:none;stroke:#0f141e;stroke-width:5}
+.urge-arc{fill:none;stroke:#3d4b6c;stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset .4s linear}
+.urge-tl{display:grid;gap:3px}
+.urge-tl b{font:700 21px/1 var(--f-num);color:#b9c0cf}
+.urge-tl span{font:600 13px/1.2 var(--f-ui);color:#6b7488}
+.urge-x{margin-left:auto;min-height:44px;padding:0 16px;border-radius:12px;color:#6b7488;box-shadow:inset 0 0 0 1px #161c2a;font:700 12px/1 var(--f-ui);letter-spacing:.08em}
+.urge-x.wide{width:100%;margin:0}
+.urge-card{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;min-height:140px;padding:4px 2px}
+.urge-cat{font:700 12px/1.2 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:#59657f}
+.urge-text{margin:0;font:600 clamp(24px,6.8vw,32px)/1.35 var(--f-ui);color:#c4cad6;white-space:pre-wrap;overflow-wrap:anywhere;text-wrap:pretty}
+.urge-text.long{font-size:clamp(20px,5.4vw,25px)}
+.urge-text.q{color:#9aa3b6}
+.urge-next{width:100%;min-height:70px;border-radius:18px;background:#0c111d;color:#c4cad6;font:800 22px/1 var(--f-ui);letter-spacing:.06em;box-shadow:inset 0 0 0 1px #1c2537}
+.urge-next:active{background:#111829}
+.urge-acts{display:grid;gap:8px}
+.urge-act{min-height:50px;padding:0 16px;border-radius:14px;text-align:left;color:#a3abbd;background:#060910;box-shadow:inset 0 0 0 1px #151b28;font:700 15.5px/1.2 var(--f-ui)}
+.urge-act.ok{color:#7f9a8e}
+.urge-verse{margin:2px 0 0;font-size:13.5px;line-height:1.5;color:#5d6679;text-align:center;text-wrap:pretty}
+.urge-verse b{display:block;margin-top:5px;font:700 11px/1 var(--f-ui);letter-spacing:.1em;color:#475063}
+.urge-conf{position:fixed;inset:0;z-index:76;display:flex;align-items:center;justify-content:center;background:rgba(1,2,5,.94);padding:24px max(18px,env(safe-area-inset-right,0px)) 24px max(18px,env(safe-area-inset-left,0px))}
+.urge-conf-in{width:100%;max-width:440px;display:grid;gap:14px;text-align:center}
+.urge-conf h2{font:800 26px/1.2 var(--f-ui);color:#c4cad6}
+.urge-conf p{margin:0 0 6px;font-size:18px;line-height:1.5;color:#9aa3b6}
+.urge-end{justify-content:center;text-align:center;gap:28px}
 .a-sched{transition:box-shadow .15s,background .15s}
 .a-sched.drag{border-color:var(--hud);box-shadow:inset 0 0 0 1px var(--hud);background:rgba(242,155,75,.06)}
 .ph-m.ag-free{color:var(--hud)}
@@ -861,6 +910,7 @@ textarea.inp#why-text{min-height:96px}
         <button class="ibtn" type="button" hidden id="pip-btn" data-act="popout" aria-label="Pop out the timer" title="Pop out the timer"></button>
         <button class="ibtn man" type="button" data-act="manual" aria-label="Field manual" title="Field manual"></button>
         <button class="ibtn" type="button" id="fs-btn" data-act="fullscreen" aria-label="Full screen" title="Full screen"></button>
+        <button class="ibtn anc-btn" type="button" data-act="anchor" aria-label="Anchor" title="Anchor"></button>
         <button class="ibtn" type="button" data-act="settings" aria-label="Settings" title="Settings"></button>
       </div>
     </div>
@@ -873,6 +923,7 @@ textarea.inp#why-text{min-height:96px}
 <div id="widget"></div>
 <div id="ov"></div>
 <div id="flexov"></div>
+<div id="anchorov"></div>
 <div id="mod"></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <div class="fx-scan" aria-hidden="true"></div>
@@ -1005,11 +1056,11 @@ function heatColor(h) {
 }
 function setPath(o, path, v) { const k = path.split('.'); let t = o; for (let i = 0; i < k.length - 1; i++) { if (t[k[i]] == null) t[k[i]] = {}; t = t[k[i]]; } t[k[k.length - 1]] = v; }
 function focusSoon(id) { setTimeout(function () { const el = document.getElementById(id); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } }, 60); }
-function tabFromHash() { const h = (location.hash || '').replace('#', ''); return ['hq', 'ops', 'infil', 'flex', 'ledger'].indexOf(h) >= 0 ? h : 'hq'; }
+function tabFromHash() { const h = (location.hash || '').replace('#', ''); return ['hq', 'ops', 'infil', 'flex', 'ledger', 'anchor'].indexOf(h) >= 0 ? h : 'hq'; }
 function pickSuggestions() { return CALLSIGNS.slice().sort(function () { return Math.random() - .5; }).slice(0, 4); }
 
 /* ================= STATE ================= */
-const S = { mode: 'connecting', why: '', ready: false, hqKnown: false, opsKnown: false, logKnown: false, hq: null, ops: {}, days: {}, dayDocs: new Set(), feed: null, sugg: [], cals: {}, calKnown: false, notes: {}, notesKnown: false };
+const S = { mode: 'connecting', why: '', ready: false, hqKnown: false, opsKnown: false, logKnown: false, hq: null, ops: {}, days: {}, dayDocs: new Set(), feed: null, sugg: [], cals: {}, calKnown: false, notes: {}, notesKnown: false, anchor: null };
 const ui = {
   tab: tabFromHash(), mins: 15, minimized: false, overlay: null, secured: null, breakOp: null,
   modal: null, away: null, awaySeen: null, promo: 0,
@@ -1021,7 +1072,8 @@ const ui = {
   feed: { avail: null, state: 'idle', msg: '', allow: false, perm: false, newCount: 0, didAuto: false },
   courseEdit: null, courseDraft: '', pinned: null, pinWhy: '',
   cal: { busy: false, del: null },
-  notes: { draft: '', edit: null, editText: '', del: null, all: false, q: '', open: null }
+  notes: { draft: '', edit: null, editText: '', del: null, all: false, q: '', open: null },
+  anc: { drafts: {}, edit: null, editText: '', del: null }, urge: null
 };
 let store = null;
 let lastD = null;
@@ -1605,7 +1657,7 @@ function saveErr(e) {
   else if (code === 'invalid_argument') toast('Save rejected', 'This terminal is read-only for you.', 'bad');
   else toast('Save failed', 'The connection dropped. Try that again.', 'bad');
 }
-const pend = { hq: 0, feed: 0, ops: new Map(), days: new Map(), cal: new Map(), notes: new Map() };
+const pend = { hq: 0, feed: 0, ops: new Map(), days: new Map(), cal: new Map(), notes: new Map(), anchor: 0 };
 function bump(map, key, d) { const n = (map.get(key) || 0) + d; if (n <= 0) map.delete(key); else map.set(key, n); }
 const gate = { n: 0, q: [] };
 function slot() { if (gate.n < 6) { gate.n++; return Promise.resolve(); } return new Promise(function (r) { gate.q.push(r); }).then(function () { gate.n++; }); }
@@ -1708,6 +1760,14 @@ function DbStore(db) {
         S.notes = m; S.notesKnown = true; scheduleRender();
       }, function (e) { console.warn('[zerogap] notes listener ended', e && e.code); S.notesKnown = true; scheduleRender(); });
     },
+    anchor: function () {
+      unsubs.anchor = db.doc('anchor/state').onSnapshot(function (snap) {
+        if (!snap.exists && snap.metadata && snap.metadata.fromCache) return;
+        const ob = single('anchor/state');
+        if (ob) S.anchor = ob.v; else if (pend.anchor <= 0) S.anchor = snap.exists ? clone(snap.data()) : null;
+        scheduleRender();
+      }, function (e) { console.warn('[zerogap] anchor listener ended', e && e.code); });
+    },
     log: function () {
       unsubs.log = logCol.orderBy('date', 'desc').limit(800).onSnapshot(function (qs) {
         const m = {}, docs = new Set();
@@ -1757,13 +1817,15 @@ function DbStore(db) {
   return {
     kind: 'db',
     flush: flush,
-    subscribe: function () { sub.hq(); sub.ops(); sub.log(); sub.feed(); sub.sugg(); sub.cal(); sub.notes(); setTimeout(flush, 1500); },
+    subscribe: function () { sub.hq(); sub.ops(); sub.log(); sub.feed(); sub.sugg(); sub.cal(); sub.notes(); sub.anchor(); setTimeout(flush, 1500); },
     setHQ: function (obj) { return write({ t: 'set', col: 'hq', id: 'state', body: clean(obj) }, mHQ); },
     deleteHQ: function () { return write({ t: 'del', col: 'hq', id: 'state' }, mHQ); },
     setFeed: function (obj) { return write({ t: 'set', col: 'feed', id: 'state', body: clean(obj) }, mFeed); },
     deleteFeed: function () { return write({ t: 'del', col: 'feed', id: 'state' }, mFeed); },
     putOp: function (op) { const body = clean(op); delete body.id; return write({ t: 'set', col: 'ops', id: op.id, body: body }, mMap(pend.ops, op.id)); },
     deleteOp: function (id) { return write({ t: 'del', col: 'ops', id: id }, mMap(pend.ops, id)); },
+    setAnchor: function (doc) { return write({ t: 'set', col: 'anchor', id: 'state', body: clean(doc) }, function (d) { pend.anchor += d; }); },
+    deleteAnchor: function () { return write({ t: 'del', col: 'anchor', id: 'state' }, function (d) { pend.anchor += d; }); },
     putNote: function (n) { const body = clean(n); delete body.id; return write({ t: 'set', col: 'notes', id: n.id, body: body }, mMap(pend.notes, n.id)); },
     deleteNote: function (id) { return write({ t: 'del', col: 'notes', id: id }, mMap(pend.notes, id)); },
     putCal: function (id, doc) { return write({ t: 'set', col: 'cal', id: id, body: clean(doc) }, mMap(pend.cal, id), function (e) { if (e && e.code === 'invalid_argument') toast('Calendar too big to save', 'Export a smaller calendar from Proton and try again.', 'bad'); else saveErr(e); }); },
@@ -1793,7 +1855,7 @@ function DbStore(db) {
 }
 function LocalStore(key, seed) {
   const KEY = key || 'zerogap.v1';
-  const norm = function (p) { p = p || {}; return { hq: p.hq || null, ops: p.ops || {}, log: p.log || {}, feed: p.feed || null, cal: p.cal || {}, notes: p.notes || {}, copyId: p.copyId || '' }; };
+  const norm = function (p) { p = p || {}; return { hq: p.hq || null, ops: p.ops || {}, log: p.log || {}, feed: p.feed || null, cal: p.cal || {}, notes: p.notes || {}, anchor: p.anchor || null, copyId: p.copyId || '' }; };
   let data = norm(null), warned = false;
   try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && typeof p === 'object') data = norm(p); } } catch (e) {}
   const persist = function () {
@@ -1806,7 +1868,7 @@ function LocalStore(key, seed) {
     S.hq = clone(data.hq);
     S.ops = withIds(data.ops); S.notes = withIds(data.notes);
     S.days = clone(data.log); S.dayDocs = new Set(Object.keys(data.log)); S.feed = clone(data.feed);
-    S.cals = clone(data.cal) || {}; S.calKnown = true; S.notesKnown = true;
+    S.cals = clone(data.cal) || {}; S.calKnown = true; S.notesKnown = true; S.anchor = clone(data.anchor);
     S.hqKnown = S.opsKnown = S.logKnown = true; onData();
   };
   const done = function () { persist(); emit(); return Promise.resolve(); };
@@ -1824,6 +1886,8 @@ function LocalStore(key, seed) {
     deleteOp: function (id) { delete data.ops[id]; return done(); },
     putNote: function (n) { data.notes[n.id] = strip(n); return done(); },
     deleteNote: function (id) { delete data.notes[id]; return done(); },
+    setAnchor: function (doc) { data.anchor = clone(doc); return done(); },
+    deleteAnchor: function () { data.anchor = null; return done(); },
     putCal: function (id, doc) { data.cal[id] = clone(doc); return done(); },
     deleteCal: function (id) { delete data.cal[id]; return done(); },
     addToDay: function (date, field, id, entry) { const d = data.log[date] || (data.log[date] = { date: date }); const f = Object.assign({}, d[field] || {}); f[id] = clone(entry); d[field] = f; return done(); },
@@ -2068,6 +2132,7 @@ function purgeAll() {
   S.feed = null; store.deleteFeed();
   Object.keys(S.cals || {}).forEach(function (id) { store.deleteCal(id); }); S.cals = {};
   Object.keys(S.notes || {}).forEach(function (id) { store.deleteNote(id); }); S.notes = {};
+  S.anchor = null; try { if (store.deleteAnchor) store.deleteAnchor(); } catch (e) {}
   ui.feed.state = 'idle'; ui.feed.msg = ''; ui.feed.didAuto = false;
   ui.overlay = null; ui.secured = null; ui.triage = null;
   toast('All data purged', 'Enroll again to start over.', 'warn');
@@ -2797,7 +2862,7 @@ document.addEventListener('input', function (ev) { if (ev.target && ev.target.id
 let DL = null;
 function initDownloads() { if (window.claude && typeof window.claude.use === 'function' && !SEED) window.claude.use('downloads').then(function (d) { DL = d || null; }).catch(function () { DL = null; }); }
 function withoutIds(o) { const m = {}; Object.keys(o || {}).forEach(function (id) { const b = clone(o[id]); delete b.id; m[id] = b; }); return m; }
-function snapshotData() { return { hq: clone(S.hq), ops: withoutIds(S.ops), log: clone(S.days) || {}, feed: clone(S.feed), cal: clone(S.cals) || {}, notes: withoutIds(S.notes) }; }
+function snapshotData() { return { hq: clone(S.hq), ops: withoutIds(S.ops), log: clone(S.days) || {}, feed: clone(S.feed), cal: clone(S.cals) || {}, notes: withoutIds(S.notes), anchor: clone(S.anchor) }; }
 function offlineHTML(snap) {
   const tpl = document.createElement('template');
   tpl.innerHTML = BOOT_BODY;
@@ -2897,7 +2962,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.1.2';
+const APP_VERSION = '1.2.0';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3442,6 +3507,196 @@ function pastApply() {
   }
   closeOp(op.id, false, P.k === today ? null : at);
 }
+
+/* ================= ANCHOR (private) ================= */
+/* Your own reasons, in your own words, for the moments that need them. Opened from the header, never shown elsewhere.
+   Saved through the same store as everything else (one "anchor" document). No counts, no history. */
+const ANCHOR_CATS = [
+  { id: 'lose', n: "What I'd lose", q: 'What would acting on this cost me?' },
+  { id: 'give', n: "What I'm giving up", q: 'What am I trading away for a few minutes?' },
+  { id: 'means', n: 'What it means', q: 'What does choosing this say about who I want to be?' },
+  { id: 'affects', n: 'How it affects me', q: 'How does it change my mind, energy, relationships and walk with God?' },
+  { id: 'toward', n: "What I'm moving toward", q: 'What life is God leading me into instead?' }
+];
+const ANCHOR_VERSES = [
+  ['Philippians 4:8', 'Whatever things are true, whatever things are honorable, whatever things are pure, whatever things are lovely… think about these things.'],
+  ['1 Corinthians 10:13', 'God is faithful, who will not allow you to be tempted above what you are able, but will with the temptation also make the way of escape.'],
+  ['Romans 12:2', "Don't be conformed to this world, but be transformed by the renewing of your mind."]
+];
+const ANCHOR_ACTS = {
+  bed: { b: 'Get out of bed', t: 'Get out of bed', d: 'Stand up now. Feet on the floor, light on, walk to another room.', ok: "I'm up" },
+  pray: { b: 'Pray: Jesus, take this thought', t: 'Pray', d: 'Jesus, take this thought. Say it slowly, then breathe out.', ok: 'Amen' },
+  music: { b: 'Put on worship', t: 'Put on worship', d: 'Open your music and play one worship song.', ok: "It's playing" }
+};
+const URGE_MS = 20 * 60000, URGE_C = 2 * Math.PI * 24;
+const ANCHOR_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.8" r="2.1" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 6.9V21M8.2 10.6h7.6M4.6 14.6c.3 3.6 3.5 6.4 7.4 6.4s7.1-2.8 7.4-6.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3.2 16.1l1.4-1.6 1.6 1.4M17.8 15.9l1.6-1.4 1.4 1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function anchorReasons() {
+  try { const a = S.anchor; return a && Array.isArray(a.reasons) ? a.reasons.filter(function (r) { return r && typeof r.text === 'string' && r.text.trim(); }) : []; }
+  catch (e) { return []; }
+}
+function anchorSave(reasons) {
+  const doc = { v: 1, reasons: reasons, at: Date.now() };
+  S.anchor = doc;
+  try {
+    const p = store && store.setAnchor ? store.setAnchor(doc) : null;
+    if (p && p.catch) p.catch(function () { toast('Could not save', 'Try again in a moment.', 'bad'); });
+  } catch (e) { toast('Could not save', 'Try again in a moment.', 'bad'); }
+  render();
+}
+function anchorSorted(cat) {
+  return anchorReasons().filter(function (r) { return r.cat === cat; }).sort(function (a, b) { return (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || (a.ord || 0) - (b.ord || 0); });
+}
+function catName(id) { const c = ANCHOR_CATS.find(function (x) { return x.id === id; }); return c ? c.n : ''; }
+function anchorAdd(cat) {
+  const text = String((ui.anc.drafts || {})[cat] || '').trim();
+  if (!text) { focusSoon('anc-new-' + cat); return; }
+  const all = anchorReasons(), ord = all.filter(function (r) { return r.cat === cat; }).reduce(function (m, r) { return Math.max(m, r.ord || 0); }, 0) + 1;
+  const box = document.getElementById('anc-new-' + cat); if (box) box.value = '';
+  ui.anc.drafts[cat] = '';
+  anchorSave(all.concat([{ id: uid('r'), cat: cat, text: text.slice(0, 600), pin: false, ord: ord, at: Date.now() }]));
+  focusSoon('anc-new-' + cat);
+}
+function anchorUpdate(id, patch) { anchorSave(anchorReasons().map(function (r) { return r.id === id ? Object.assign({}, r, patch) : r; })); }
+function anchorMove(id, dir) {
+  const r = anchorReasons().find(function (x) { return x.id === id; }); if (!r) return;
+  const list = anchorSorted(r.cat).filter(function (x) { return !!x.pin === !!r.pin; }), i = list.findIndex(function (x) { return x.id === id; }), j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const other = list[j], a = r.ord || 0, b = other.ord || 0;
+  anchorSave(anchorReasons().map(function (x) { return x.id === r.id ? Object.assign({}, x, { ord: b === a ? b + dir : b }) : x.id === other.id ? Object.assign({}, x, { ord: a }) : x; }));
+}
+function anchorItemHTML(r, list) {
+  const A = ui.anc;
+  if (A.edit === r.id) {
+    return '<li class="anc-item"><label class="sr" for="anc-edit">Edit reason</label><textarea class="inp anc-edit" id="anc-edit" data-bind="anc.editText" rows="3" maxlength="600">' + esc(A.editText) + '</textarea>' +
+      '<div class="row"><button class="btn sm solid" type="button" data-act="anc-save" data-id="' + esc(r.id) + '">SAVE</button><button class="btn sm" type="button" data-act="anc-cancel">CANCEL</button></div></li>';
+  }
+  const group = list.filter(function (x) { return !!x.pin === !!r.pin; }), gi = group.findIndex(function (x) { return x.id === r.id; });
+  return '<li class="anc-item' + (r.pin ? ' pin' : '') + '"><p class="anc-t">' + esc(r.text) + '</p><div class="anc-acts">' +
+    '<button class="link" type="button" data-act="anc-pin" data-id="' + esc(r.id) + '">' + (r.pin ? 'UNPIN' : 'PIN') + '</button>' +
+    '<button class="link" type="button" data-act="anc-edit" data-id="' + esc(r.id) + '">EDIT</button>' +
+    '<button class="link" type="button" data-act="anc-up" data-id="' + esc(r.id) + '" aria-label="Move up"' + (gi <= 0 ? ' disabled' : '') + '>↑</button>' +
+    '<button class="link" type="button" data-act="anc-down" data-id="' + esc(r.id) + '" aria-label="Move down"' + (gi >= group.length - 1 ? ' disabled' : '') + '>↓</button>' +
+    '<button class="link danger" type="button" data-act="anc-del" data-id="' + esc(r.id) + '">' + (A.del === r.id ? 'TAP AGAIN TO DELETE' : 'DELETE') + '</button></div></li>';
+}
+function viewAnchor() {
+  if (!S.ready) return viewLoading();
+  const head = '<div class="vhead"><div class="vhead-t"><div class="eyebrow">Private</div><h1 class="vt">Anchor</h1><p class="vsub">Your reasons, in your own words, for the moments that need them. Only on this device.</p></div></div>';
+  const now = '<button class="anc-now" type="button" data-act="urge">' + ANCHOR_ICON + '<span>I need this now</span></button>';
+  const cats = ANCHOR_CATS.map(function (c) {
+    const list = anchorSorted(c.id);
+    return '<section class="panel anc-cat" aria-label="' + esc(c.n) + '"><div class="ph"><span class="ph-t">' + esc(c.n) + '</span></div>' +
+      (list.length ? '<ul class="anc-list">' + list.map(function (r) { return anchorItemHTML(r, list); }).join('') + '</ul>' : '') +
+      '<div class="anc-add"><label class="sr" for="anc-new-' + c.id + '">' + esc(c.q) + '</label><textarea class="inp anc-in" id="anc-new-' + c.id + '" data-bind="anc.drafts.' + c.id + '" rows="2" maxlength="600" placeholder="' + esc(c.q) + '">' + esc((ui.anc.drafts || {})[c.id] || '') + '</textarea>' +
+      '<button class="btn hud" type="button" data-act="anc-add" data-v="' + c.id + '">ADD</button></div></section>';
+  }).join('');
+  const backup = '<section class="panel anc-cat"><div class="ph"><span class="ph-t">Keep a copy</span></div><p class="hint" style="margin:0 0 12px">Your reasons stay on this device. Export saves them to a file you can keep; Import adds reasons from that file without removing any.</p>' +
+    '<div class="row"><button class="btn sm" type="button" data-act="anc-export">EXPORT</button><button class="btn sm" type="button" data-act="anc-import">IMPORT</button></div></section>';
+  return '<div class="view anc">' + head + now + cats + backup + '</div>';
+}
+function urgeDeck() {
+  const all = anchorReasons(), order = ANCHOR_CATS.map(function (c) { return c.id; });
+  const pinned = all.filter(function (r) { return r.pin; }).sort(function (a, b) { return order.indexOf(a.cat) - order.indexOf(b.cat) || (a.ord || 0) - (b.ord || 0); });
+  const piles = order.map(function (id) { return all.filter(function (r) { return r.cat === id && !r.pin; }).sort(function (a, b) { return (a.ord || 0) - (b.ord || 0); }); });
+  const mix = [];
+  for (let round = 0; piles.some(function (p) { return p.length > round; }); round++) piles.forEach(function (p) { if (p[round]) mix.push(p[round]); });
+  const deck = pinned.concat(mix).map(function (r) { return { cat: r.cat, text: r.text }; });
+  return deck.length ? deck : ANCHOR_CATS.map(function (c) { return { cat: c.id, text: c.q, q: true }; });
+}
+function urgeOpen() {
+  const now = Date.now();
+  ui.urge = { start: now, end: now + URGE_MS, i: 0, deck: urgeDeck(), v: 0, ack: {}, confirm: null, done: false, exitAt: 0 };
+  render();
+}
+function urgeClose() { ui.urge = null; render(); }
+function urgeVerse() { const u = ui.urge; return u ? Math.floor((Date.now() - u.start) / 60000) % ANCHOR_VERSES.length : 0; }
+function urgeVerseHTML(i) { const v = ANCHOR_VERSES[i]; return '“' + esc(v[1]) + '”<b>' + esc(v[0]) + ' · WEB</b>'; }
+function urgeHTML() {
+  const u = ui.urge; if (!u) return '';
+  if (u.done) {
+    return '<div class="urge" role="dialog" aria-modal="true" aria-label="Done"><div class="urge-in urge-end"><p class="urge-text">You made it through.<br>Go to sleep.</p><button class="urge-next" type="button" data-act="urge-close">CLOSE</button></div></div>';
+  }
+  const card = u.deck[u.i % u.deck.length], rem = Math.max(0, u.end - Date.now());
+  const off = (URGE_C * (1 - rem / URGE_MS)).toFixed(2);
+  const acts = Object.keys(ANCHOR_ACTS).map(function (k) { const a = ANCHOR_ACTS[k], ok = !!u.ack[k]; return '<button class="urge-act' + (ok ? ' ok' : '') + '" type="button" data-act="urge-act" data-v="' + k + '">' + (ok ? '✓ ' : '') + esc(a.b) + '</button>'; }).join('');
+  let confirm = '';
+  if (u.confirm && ANCHOR_ACTS[u.confirm]) {
+    const a = ANCHOR_ACTS[u.confirm];
+    confirm = '<div class="urge-conf" role="alertdialog" aria-labelledby="urge-ct"><div class="urge-conf-in"><h2 id="urge-ct">' + esc(a.t) + '</h2><p>' + esc(a.d) + '</p><button class="urge-next" type="button" data-act="urge-ok" data-v="' + u.confirm + '">' + esc(a.ok) + '</button><button class="urge-x wide" type="button" data-act="urge-cancel">NOT YET</button></div></div>';
+  }
+  return '<div class="urge" role="dialog" aria-modal="true" aria-label="Anchor"><div class="urge-in">' +
+    '<div class="urge-top"><div class="urge-timer"><div class="urge-ring"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="24" class="urge-track"/><circle id="urge-arc" cx="30" cy="30" r="24" class="urge-arc" transform="rotate(-90 30 30)" style="stroke-dasharray:' + URGE_C.toFixed(2) + ';stroke-dashoffset:' + off + '"/></svg></div>' +
+    '<div class="urge-tl"><b id="urge-time">' + fmtMS(rem) + '</b><span>This passes.</span></div></div><button class="urge-x" type="button" data-act="urge-close">CLOSE</button></div>' +
+    '<div class="urge-card" aria-live="polite"><div class="urge-cat">' + esc(catName(card.cat)) + '</div><p class="urge-text' + (card.text.length > 220 ? ' long' : '') + (card.q ? ' q' : '') + '">' + esc(card.text) + '</p></div>' +
+    '<button class="urge-next" type="button" data-act="urge-next">NEXT</button>' +
+    '<div class="urge-acts">' + acts + '</div>' +
+    '<p class="urge-verse" id="urge-verse">' + urgeVerseHTML(u.v) + '</p></div>' + confirm + '</div>';
+}
+function urgeTick() {
+  const u = ui.urge; if (!u) return;
+  const now = Date.now();
+  if (u.done) { if (u.exitAt && now >= u.exitAt) urgeClose(); return; }
+  const rem = Math.max(0, u.end - now);
+  const t = document.getElementById('urge-time'); if (t) t.textContent = fmtMS(rem);
+  const arc = document.getElementById('urge-arc'); if (arc) arc.style.strokeDashoffset = String((URGE_C * (1 - rem / URGE_MS)).toFixed(2));
+  const vi = urgeVerse();
+  if (vi !== u.v) { u.v = vi; const el = document.getElementById('urge-verse'); if (el) el.innerHTML = urgeVerseHTML(vi); }
+  if (rem <= 0) { u.done = true; u.confirm = null; u.exitAt = now + 10000; render(); }
+}
+async function anchorExport() {
+  const list = anchorReasons();
+  if (!list.length) { toast('Nothing to export yet', 'Add a reason first.', 'info'); return; }
+  const name = 'anchor-' + dayKey(Date.now()) + '.json', text = JSON.stringify({ kind: 'zerogap-anchor', v: 1, at: Date.now(), reasons: list });
+  if (DL) {
+    try { await DL.save({ filename: name, data: text }); toast('Saved', name, 'good'); }
+    catch (e) { if (!e || e.code !== 'declined') toast('Download did not start', 'Try again.', 'warn'); }
+    return;
+  }
+  try {
+    const file = new File([text], name, { type: 'application/json' });
+    if (COARSE && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); toast('Ready to save', 'Pick Save to Files in the share sheet.', 'good'); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 3000);
+    toast('Saved', name, 'good');
+  } catch (e) { toast('Could not save the file', 'Try again.', 'bad'); }
+}
+async function anchorImport(files) {
+  const f = files && files[0]; if (!f) return;
+  let pkg = null;
+  try { pkg = JSON.parse(await f.text()); } catch (e) { pkg = null; }
+  const src = pkg && pkg.kind === 'zerogap-anchor' ? pkg.reasons : pkg && pkg.kind === 'zerogap-backup' && pkg.data && pkg.data.anchor ? pkg.data.anchor.reasons : null;
+  if (!Array.isArray(src)) { toast('Not an Anchor file', 'Pick the .json made with EXPORT.', 'warn'); return; }
+  const cats = ANCHOR_CATS.map(function (c) { return c.id; }), all = anchorReasons();
+  const seen = new Set(all.map(function (r) { return r.cat + '|' + r.text.trim().toLowerCase(); }));
+  let added = 0;
+  src.forEach(function (r) {
+    if (!r || cats.indexOf(r.cat) < 0 || typeof r.text !== 'string' || !r.text.trim()) return;
+    const key = r.cat + '|' + r.text.trim().toLowerCase(); if (seen.has(key)) return;
+    seen.add(key);
+    const ord = all.filter(function (x) { return x.cat === r.cat; }).reduce(function (m, x) { return Math.max(m, x.ord || 0); }, 0) + 1;
+    all.push({ id: uid('r'), cat: r.cat, text: r.text.trim().slice(0, 600), pin: !!r.pin, ord: ord, at: Date.now() });
+    added++;
+  });
+  if (!added) { toast('Nothing new', 'Every reason in that file is already here.', 'info'); return; }
+  anchorSave(all);
+  toast('Imported', added + (added === 1 ? ' reason added.' : ' reasons added.'), 'good');
+}
+function initAnchorInput() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.id = 'anc-in'; inp.accept = '.json,application/json'; inp.tabIndex = -1;
+  inp.setAttribute('aria-hidden', 'true');
+  inp.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
+  inp.addEventListener('change', function () { const fs = Array.prototype.slice.call(inp.files || []); inp.value = ''; if (fs.length) anchorImport(fs); });
+  document.body.appendChild(inp);
+}
+let ancDelT = 0;
+document.addEventListener('keydown', function (ev) {
+  const t = ev.target; if (!t || ev.isComposing || !t.classList || !t.classList.contains('anc-in')) return;
+  if (ev.key === 'Enter' && !ev.shiftKey && !COARSE) { ev.preventDefault(); anchorAdd(t.id.replace('anc-new-', '')); }
+});
 
 /* ================= TOASTS ================= */
 let toastSeq = 0;
@@ -4050,15 +4305,16 @@ function render() {
   setHTML($('#tabs-top'), tabsHTML(D));
   setHTML($('#tabs-bottom'), tabsHTML(D));
   setHTML($('#banner'), bannerHTML());
-  setHTML($('#view'), ui.tab === 'ops' ? viewOps(D) : ui.tab === 'infil' ? viewInfil(D) : ui.tab === 'flex' ? viewFlex() : ui.tab === 'ledger' ? viewLedger(D) : viewHQ(D));
+  setHTML($('#view'), ui.tab === 'ops' ? viewOps(D) : ui.tab === 'infil' ? viewInfil(D) : ui.tab === 'anchor' ? viewAnchor() : ui.tab === 'flex' ? viewFlex() : ui.tab === 'ledger' ? viewLedger(D) : viewHQ(D));
   setHTML($('#ov'), overlayHTML(D));
   setHTML($('#flexov'), flexOverlayHTML());
+  setHTML($('#anchorov'), urgeHTML());
   setHTML($('#mod'), modalHTML(D));
   setHTML($('#mini'), miniHTML());
   setHTML($('#widget'), ui.widget ? widgetHTML(D) : '');
   document.body.classList.toggle('widget', !!ui.widget);
   document.body.classList.toggle('has-mini', !!(S.hq && S.hq.active && ui.minimized));
-  document.body.classList.toggle('locked', !!((!ui.widget && overlayType()) || ui.modal || ui.flex));
+  document.body.classList.toggle('locked', !!((!ui.widget && overlayType()) || ui.modal || ui.flex || ui.urge));
   const sb = document.getElementById('snd-btn');
   if (sb) {
     const on = Sfx.enabled(), lk = on && !Sfx.unlocked && !!S.hq;
@@ -4108,6 +4364,7 @@ function startClock() {
 function tick() {
   updateTimer();
   flexTick();
+  urgeTick();
   const a = S.hq && S.hq.active;
   cueCheck(a);
   if (Pip.active) Pip.draw();
@@ -4132,6 +4389,7 @@ function closeModal() {
   ui.modal = null; render();
 }
 function onEscape() {
+  if (ui.urge) { if (ui.urge.confirm) { ui.urge.confirm = null; render(); } else urgeClose(); return; }
   if (ui.flex && !ui.modal) { flexClose(); return; }
   if (ui.modal) { if (ui.modal !== 'enroll' && ui.modal !== 'away') closeModal(); return; }
   const t = overlayType();
@@ -4139,7 +4397,7 @@ function onEscape() {
   if (t) { ui.overlay = null; ui.secured = null; render(); }
 }
 const ACT_SFX = { manual: 'open', settings: 'open', dump: 'open', pick: 'open', triage: 'open', 'purge-open': 'warn', 'close-mod': 'close', 'promo-ok': 'close', dismiss: 'close', 'purge-cancel': 'close', 'crs-cancel': 'close', 'route-abort': 'abort', 'away-discard': 'abort', mins: 'blip', 'tri-res': 'blip', 'en-quota': 'blip', 'set-q': 'blip' };
-const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close', 'past-ok']);
+const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close', 'past-ok', 'anchor', 'urge', 'urge-next', 'urge-close', 'urge-act', 'urge-ok', 'urge-cancel', 'anc-add', 'anc-pin', 'anc-edit', 'anc-cancel', 'anc-save', 'anc-up', 'anc-down', 'anc-del', 'anc-export', 'anc-import']);
 document.addEventListener('click', function (ev) {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
@@ -4276,6 +4534,23 @@ document.addEventListener('click', function (ev) {
       else { ui.cal.del = id; calDelT = setTimeout(function () { ui.cal.del = null; scheduleRender(); }, 4000); }
       render(); break;
     }
+    case 'anchor': if (ui.tab !== 'anchor') location.hash = 'anchor'; else render(); break;
+    case 'urge': urgeOpen(); break;
+    case 'urge-next': if (ui.urge && !ui.urge.done) { ui.urge.i = (ui.urge.i + 1) % ui.urge.deck.length; render(); } break;
+    case 'urge-close': urgeClose(); break;
+    case 'urge-act': if (ui.urge && ANCHOR_ACTS[v]) { ui.urge.confirm = v; render(); } break;
+    case 'urge-ok': if (ui.urge) { ui.urge.ack[v] = true; ui.urge.confirm = null; render(); } break;
+    case 'urge-cancel': if (ui.urge) { ui.urge.confirm = null; render(); } break;
+    case 'anc-add': anchorAdd(v); break;
+    case 'anc-pin': { const r = anchorReasons().find(function (x) { return x.id === id; }); if (r) anchorUpdate(id, { pin: !r.pin }); break; }
+    case 'anc-edit': { const r = anchorReasons().find(function (x) { return x.id === id; }); if (r) { ui.anc.edit = id; ui.anc.editText = r.text; ui.anc.del = null; render(); focusSoon('anc-edit'); } break; }
+    case 'anc-cancel': ui.anc.edit = null; render(); break;
+    case 'anc-save': { const t = String(ui.anc.editText || '').trim(); ui.anc.edit = null; if (t) anchorUpdate(id, { text: t.slice(0, 600) }); else render(); break; }
+    case 'anc-up': anchorMove(id, -1); break;
+    case 'anc-down': anchorMove(id, 1); break;
+    case 'anc-del': clearTimeout(ancDelT); if (ui.anc.del === id) { ui.anc.del = null; anchorSave(anchorReasons().filter(function (x) { return x.id !== id; })); } else { ui.anc.del = id; ancDelT = setTimeout(function () { ui.anc.del = null; scheduleRender(); }, 4000); render(); } break;
+    case 'anc-export': anchorExport(); break;
+    case 'anc-import': { const inp = document.getElementById('anc-in'); if (inp) inp.click(); break; }
     case 'past': pastOpen(id); break;
     case 'past-day': if (ui.past) { ui.past.k = v; render(); } break;
     case 'past-ok': pastApply(); break;
@@ -4355,7 +4630,7 @@ window.addEventListener('hashchange', function () {
   const t = tabFromHash();
   if (t === ui.tab) return;
   ui.tab = t;
-  Sfx.ui('tab');
+  if (t !== 'anchor') Sfx.ui('tab');
   if (t === 'infil' && !ui.infil.target && lastD) ui.infil.target = infilTargetId(lastD);
   render(); window.scrollTo(0, 0);
 });
@@ -4371,6 +4646,7 @@ document.addEventListener('visibilitychange', function () {
 /* ================= BOOT ================= */
 document.querySelector('[data-act="manual"]').innerHTML = ICON.manual;
 document.querySelector('[data-act="settings"]').innerHTML = ICON.gear;
+document.querySelector('[data-act="anchor"]').innerHTML = ANCHOR_ICON;
 function syncFs() { const b = document.getElementById('fs-btn'); if (!b) return; const on = !!document.fullscreenElement; b.innerHTML = on ? ICON.fsOff : ICON.fsOn; b.title = on ? 'Exit full screen (Esc)' : 'Full screen'; b.setAttribute('aria-label', b.title); b.classList.toggle('pip-on', on); }
 document.addEventListener('fullscreenchange', syncFs); syncFs();
 try {
@@ -4391,6 +4667,7 @@ connect();
 initFeed();
 initIcsInput();
 initSyncInput();
+initAnchorInput();
 initDownloads();
 initApp();
 window.addEventListener('online', function () { if (store && store.flush) store.flush(); render(); });
