@@ -7,6 +7,8 @@
 <meta name="description" content="Covert-ops task command: ops board, notes, schedule and focus timer. Works offline.">
 <meta name="theme-color" content="#0a0f1e">
 <meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://api.github.com; worker-src 'self' blob:; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -17,10 +19,9 @@
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 </head>
 <body>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&display=swap">
 <style>
+/* Exo 2 (SIL Open Font License, fonts/OFL-Exo2.txt), served from this site so no request goes to Google */
+@font-face{font-family:'Exo 2';font-style:normal;font-weight:400 800;font-display:swap;src:url(fonts/exo2-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* Layout: covert-ops console. Classification strip + sticky command header, one station at a time
    (HQ / OPS / INFIL / LEDGER), station bar at the bottom on phones, full-screen op window for the timer.
    Deliberately single-theme: a calm night console (muted color, legible type). */
@@ -873,6 +874,19 @@ a.gr-row:hover,a.gr-row:focus-visible{box-shadow:inset 0 0 0 1px var(--hud-dim)}
 .gr-mlist small{grid-column:1;color:var(--mute);font-size:12.5px}
 .gr-mlist a{grid-column:2;grid-row:1/span 2;font:700 11px/1 var(--f-ui);letter-spacing:.1em;color:var(--hud);text-decoration:none;padding:8px 10px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--hud-dim)}
 .gr-err{margin-top:0}
+.tok-nudge{display:block;margin:0 0 12px;box-shadow:inset 0 0 0 1px var(--hud)}
+.tok-nudge .steps{margin-top:8px}
+.hq .a-news{order:5}
+.ann-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ann{border-radius:12px;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--line)}
+.ann.new{box-shadow:inset 0 0 0 1px var(--hud-dim)}
+.ann-h{display:grid;gap:4px;width:100%;text-align:left;padding:10px 12px;background:none;border:0;color:inherit;font:inherit;cursor:pointer}
+.ann-h small{font:700 10.5px/1.3 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.ann-new{color:var(--hud);margin-right:6px}
+.ann-h b{font-size:14.5px;overflow-wrap:anywhere}
+.ann-p{font-size:13px;color:var(--mute);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ann-body{padding:0 12px 12px;font-size:14px;line-height:1.5;overflow-wrap:anywhere;color:var(--dim)}
+.ann-body p{margin:10px 0 0}
 .pl-day.today .lbl{color:var(--hud)}
 .pl-day.past{opacity:.55}
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -1117,7 +1131,7 @@ const ui = {
   enroll: { callsign: '', quota: 4, sugg: pickSuggestions() },
   settings: null, purgeText: '', purgeOpen: false,
   feed: { avail: null, state: 'idle', msg: '', allow: false, perm: false, newCount: 0, didAuto: false },
-  courseEdit: null, courseDraft: '', pinned: null, pinWhy: '',
+  courseEdit: null, courseDraft: '', pinned: null, pinWhy: '', annOpen: null, annAll: false,
   cal: { busy: false, del: null },
   notes: { draft: '', edit: null, editText: '', del: null, all: false, q: '', open: null },
   anc: { drafts: {}, edit: null, editText: '', del: null, ex: {} }, urge: null
@@ -1903,7 +1917,10 @@ function DbStore(db) {
 }
 function LocalStore(key, seed) {
   const KEY = key || 'zerogap.v1';
-  const norm = function (p) { p = p || {}; return { hq: p.hq || null, ops: p.ops || {}, log: p.log || {}, feed: p.feed || null, cal: p.cal || {}, notes: p.notes || {}, anchor: p.anchor || null, copyId: p.copyId || '' }; };
+  /* Only well-formed ids get in, whatever the source (this device, sync, a backup file), because ids end up in HTML attributes. */
+  const okMap = function (m) { const out = {}; if (m && typeof m === 'object') Object.keys(m).forEach(function (k) { if (/^[\w#.:-]{1,200}$/.test(k) && m[k] && typeof m[k] === 'object') out[k] = m[k]; }); return out; };
+  const okOps = function (m) { const out = okMap(m); Object.keys(out).forEach(function (k) { const o = out[k]; if (typeof o.code !== 'string' || !/^[\w .'-]{0,40}$/.test(o.code)) out[k] = Object.assign({}, o, { code: 'FIELD OP' }); }); return out; };
+  const norm = function (p) { p = p || {}; return { hq: p.hq || null, ops: okOps(p.ops), log: okMap(p.log), feed: p.feed || null, cal: okMap(p.cal), notes: okMap(p.notes), anchor: p.anchor || null, copyId: p.copyId || '' }; };
   let data = norm(null), warned = false;
   try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw); if (p && typeof p === 'object') data = norm(p); } } catch (e) {}
   const persist = function () {
@@ -2374,7 +2391,7 @@ const RT = {
   autoOn: 'Armed: every op with a deadline gets its own alert event in your Google Calendar, and your phone pings you at that time. Disarming deletes those alerts.',
   autoOff: 'Arm this and every op with a deadline creates its own alert in your Google Calendar. Your phone gets the notification through the Google Calendar app.',
   turnOn: 'ARM AUTO ALERTS', turnOff: 'DISARM ALERTS',
-  manual: 'Each op with a deadline gets an ⏰ ALERT button that opens Google Calendar with the reminder filled in. Tap Save there.',
+  manual: 'Each op with a deadline gets an ⏰ ALERT button. It saves a calendar reminder: your phone offers to add it to its calendar app, and on a computer you can import the file into Proton Calendar. Nothing goes to Google.',
   add: 'ALERT', added: 'ALERT SET', pending: 'ALERT PENDING', autoTip: 'Auto alert in Google Calendar',
   made: function (n) { return n === 1 ? '1 alert created in Google Calendar' : n + ' alerts created in Google Calendar'; },
   fail: 'An alert could not be created',
@@ -2392,6 +2409,18 @@ function remAt(op) {
   return d;
 }
 function remFmt(d) { return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()] + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+/* A one-event calendar file with an alarm, so alerts work with any calendar app and nothing goes to Google */
+function icsEsc(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/[;,]/g, function (c) { return '\\' + c; }).replace(/\r?\n/g, '\\n'); }
+function icsLink(op) {
+  const a = remAt(op); if (!a) return '';
+  const b = new Date(a.getTime() + 15 * 60000), now = new Date();
+  const z = function (d) { return d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z'; };
+  const t = RT.title(op.title, op.due);
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ZERO GAP//Alert//EN', 'BEGIN:VEVENT', 'UID:' + String(op.id).replace(/[^A-Za-z0-9_-]/g, '') + '-' + gcalCompact(a) + '@zero-gap', 'DTSTAMP:' + z(now),
+    'DTSTART:' + z(a), 'DTEND:' + z(b), 'SUMMARY:' + icsEsc(t), 'DESCRIPTION:' + icsEsc(RT.desc(op.title, op.due)),
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(t), 'TRIGGER:PT0M', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+}
 function gcalCompact(d) { return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00'; }
 function gcalLink(op) {
   const a = remAt(op); if (!a) return '';
@@ -2403,6 +2432,7 @@ function remBtnHTML(op) {
   const a = remAt(op); if (!a || a.getTime() < Date.now()) return '';
   if (remAutoOn()) { const ok = !!(op.rem && op.rem.at === isoLocal(a)); return '<span class="remtag' + (ok ? ' ok' : '') + '" title="' + esc(RT.autoTip) + '">⏰ ' + (ok ? remFmt(a) : RT.pending) + '</span>'; }
   const done = op.remLink === isoLocal(a);
+  if (!MCP) return '<a class="btn sm rem' + (done ? ' ok' : '') + '" href="' + esc(icsLink(op)) + '" download="zero-gap-alert.ics" data-act="rem-link" data-id="' + esc(op.id) + '">⏰ ' + (done ? RT.added : RT.add) + '</a>';
   return '<a class="btn sm rem' + (done ? ' ok' : '') + '" href="' + esc(gcalLink(op)) + '" target="_blank" rel="noopener" data-act="rem-link" data-id="' + op.id + '">⏰ ' + (done ? RT.added : RT.add) + '</a>';
 }
 function remPanelHTML() {
@@ -3011,7 +3041,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.1';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3892,7 +3922,7 @@ function planSync(force) {
   patchHQ({ plan: next });
 }
 let planT = 0;
-function schedulePlan() { clearTimeout(planT); planT = setTimeout(function () { try { canvasDedupe(); } catch (e) { console.warn('[zerogap] cleanup', e); } try { planSync(false); } catch (e) { console.warn('[zerogap] plan', e); } }, 1200); }
+function schedulePlan() { clearTimeout(planT); planT = setTimeout(function () { try { canvasDedupe(); } catch (e) { console.warn('[zerogap] cleanup', e); } try { tokenRemind(); } catch (e) {} try { planSync(false); } catch (e) { console.warn('[zerogap] plan', e); } }, 1200); }
 function planItems() { const p = S.hq && S.hq.plan; return p && p.week === dayKey(planWeekStart().getTime()) ? (p.items || []) : []; }
 function planItemDone(it) { const o = S.ops[it.op]; return !!(it.done || (o && o.status === 'closed')); }
 function planToday() {
@@ -4056,7 +4086,7 @@ function syncMerge(base, local, remote) {
   out.feed = m3(base.feed, local.feed, remote.feed, function (l, r) {
     if (!l || !r) return l || r;
     const n = newer(l, r);
-    return Object.assign({}, n, { courses: mergeMap(bf.courses, l.courses, r.courses, function (a, b) { return n === r ? b : a; }), seen: Object.assign({}, l.seen, r.seen), autoDone: Object.assign({}, l.autoDone, r.autoDone), cnames: Object.assign({}, l.cnames, r.cnames) });
+    return Object.assign({}, n, { courses: mergeMap(bf.courses, l.courses, r.courses, function (a, b) { return n === r ? b : a; }), seen: Object.assign({}, l.seen, r.seen), autoDone: Object.assign({}, l.autoDone, r.autoDone), annSeen: Object.assign({}, l.annSeen, r.annSeen), cnames: Object.assign({}, l.cnames, r.cnames) });
   });
   const ar = function (d) { const m = {}; ((d && d.reasons) || []).forEach(function (x) { if (x && x.id) m[x.id] = x; }); return m; };
   if (!local.anchor && !remote.anchor) out.anchor = null;
@@ -4162,6 +4192,7 @@ function canvasApply(events, j) {
   const cutoff = dayKey(Date.now() - 45 * 86400000);
   Object.keys(F.seen).forEach(function (k) { if (!isDate(F.seen[k]) || F.seen[k] < cutoff) delete F.seen[k]; });
   canvasSchool(j, F);
+  if (j) canvasNews(j, F);
   if (j && j.status) canvasAutoDone(j.status, F, byExt);
   F.lastSync = Date.now(); F.lastCount = events.length; F.via = 'github';
   saveFeed(F);
@@ -4174,7 +4205,7 @@ function syncSettingsHTML() {
   if (c) {
     return '<div class="audio-sec"><div class="lbl">Sync between devices</div>' +
       '<p>' + (SY.busy ? 'Syncing now…' : c.err ? 'Paused: ' + esc(c.err) + '.' : c.lastAt ? 'Synced ' + calAgo(c.lastAt).toLowerCase() + ' with <b>' + esc(c.repo) + '</b>. Encrypted with your passphrase.' : 'Connected to <b>' + esc(c.repo) + '</b>.') + '</p>' +
-      '<p class="small">Canvas: ' + (c.canvasOn ? 'updated ' + (c.canvasAt ? calAgo(c.canvasAt).toLowerCase() : 'recently') + ' · ' + (c.canvasN || 0) + ' items in the feed' + (S.feed && S.feed.grades ? (S.feed.grades.err ? ' · grades paused (token)' : ' · grades on') : '') + '.' : 'not set up yet (add the CANVAS_FEED_URL secret to the repo).') + '</p>' +
+      '<p class="small">Canvas: ' + (c.canvasOn ? 'updated ' + (c.canvasAt ? calAgo(c.canvasAt).toLowerCase() : 'recently') + ' · ' + (c.canvasN || 0) + ' items in the feed' + (S.feed && S.feed.grades ? (S.feed.grades.err ? ' · grades paused (token)' : ' · grades on' + (function () { const t = tokenDaysLeft(); return t ? ' · token runs out ' + (t.guess ? 'around ' : '') + shortDay(dayKey(t.exp)) : ''; })()) : '') + '.' : 'not set up yet (add the CANVAS_FEED_URL secret to the repo).') + '</p>' +
       '<div class="row"><button class="btn sm hud" type="button" data-act="sync-now"' + (SY.busy ? ' disabled' : '') + '>SYNC NOW</button>' +
       (f.confirm ? '<button class="btn sm danger" type="button" data-act="sync-off">TAP AGAIN TO TURN OFF</button>' : '<button class="btn sm" type="button" data-act="sync-off">TURN OFF ON THIS DEVICE</button>') + '</div></div>';
   }
@@ -4356,10 +4387,65 @@ function gradesPanelHTML() {
     return '<li><span>' + esc(m.title) + '</span><small>' + esc(courseLabel(m.code)) + when + '</small>' + (m.url ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">OPEN</a>' : '') + '</li>';
   }).join('');
   const err = G.err === 'token' ? '<p class="feed-msg gr-err">Canvas stopped accepting your token, so these are your grades from ' + esc(calAgo(G.at).toLowerCase()) + '. Make a new token in Canvas (Account → Settings) and paste it into the CANVAS_TOKEN secret.</p>' : '';
-  return '<section class="panel a-grades" aria-label="Grades"><div class="ph"><span class="ph-t">Grades</span><span class="ph-m">' + (G.err ? 'NOT CURRENT' : 'FROM CANVAS') + '</span></div>' + err +
+  return '<section class="panel a-grades" aria-label="Grades"><div class="ph"><span class="ph-t">Grades</span><span class="ph-m">' + (G.err ? 'NOT CURRENT' : 'FROM CANVAS') + '</span></div>' + err + tokenNudgeHTML() +
     '<ul class="gr-list">' + rows + '</ul>' +
     (miss ? '<div class="lbl" style="margin-top:14px">Missing work · ' + (G.missing.length) + '</div><ul class="gr-mlist">' + miss + '</ul>' : '') +
     '<p class="small" style="margin:10px 0 0">Tap a class to open its grades in Canvas.</p></section>';
+}
+
+/* ================= ANNOUNCEMENTS + TOKEN REMINDER ================= */
+/* Announcements arrive as plain text (the workflow strips the HTML) and are shown escaped. */
+function canvasNews(j, F) {
+  const before = {};
+  (F.news || []).forEach(function (a) { before[a.id] = 1; });
+  F.news = (Array.isArray(j && j.announcements) ? j.announcements : []).slice(0, 20).map(function (a) {
+    return { id: String(a.id || '').slice(0, 40), code: String(a.code || '').slice(0, 40), title: String(a.title || '').slice(0, 200), text: String(a.text || '').slice(0, 1600), at: String(a.at || '').slice(0, 30), url: httpsUrl(a.url) };
+  }).filter(function (a) { return a.id; });
+  F.token = j && (j.tokenExpires || j.tokenSince) ? { exp: String(j.tokenExpires || ''), since: String(j.tokenSince || '') } : null;
+  const fresh = F.news.filter(function (a) { return !before[a.id] && !(F.annSeen || {})[a.id]; }).length;
+  if (fresh && Object.keys(before).length) toast(fresh + ' new announcement' + (fresh === 1 ? '' : 's'), 'From Canvas. Read ' + (fresh === 1 ? 'it' : 'them') + ' on HQ.', 'info');
+}
+function tokenDaysLeft() {
+  const t = S.feed && S.feed.token; if (!t) return null;
+  let exp = Date.parse(t.exp);
+  if (isNaN(exp)) { const s = Date.parse(t.since); if (isNaN(s)) return null; exp = s + 30 * 864e5; }
+  return { exp: exp, days: Math.ceil((exp - Date.now()) / 864e5), guess: !t.exp };
+}
+function tokenNudgeHTML() {
+  const t = tokenDaysLeft(), G = S.feed && S.feed.grades;
+  if (!t || t.days > 3 || (G && G.err)) return '';
+  const when = t.days <= 0 ? 'today' : t.days === 1 ? 'tomorrow' : 'in ' + t.days + ' days';
+  return '<div class="pl-nudge tok-nudge"><span>Your Canvas token runs out ' + (t.guess ? 'around ' : '') + esc(shortDay(dayKey(t.exp))) + ' (' + when + '). Renew it so grades keep coming:</span>' +
+    '<ol class="steps"><li>Canvas → Account → Settings → <b>+ New Access Token</b> → latest date → copy.</li><li>GitHub → zero-gap-data → Settings → Secrets and variables → Actions → <b>CANVAS_TOKEN</b> → Update → paste.</li></ol></div>';
+}
+function tokenRemind() {
+  const t = tokenDaysLeft(), G = S.feed && S.feed.grades;
+  if (!t || t.days > 2 || (G && G.err)) return;
+  const k = 'zerogap.tokwarn', today = dayKey(Date.now());
+  try { if (localStorage.getItem(k) === today) return; localStorage.setItem(k, today); } catch (e) { return; }
+  toast('Canvas token runs out ' + (t.days <= 0 ? 'today' : t.days === 1 ? 'tomorrow' : 'in ' + t.days + ' days'), 'Renew it in 2 minutes. Steps are in the Grades panel on HQ.', 'warn');
+}
+function annMarkSeen(id) {
+  const F = S.feed; if (!F || (F.annSeen && F.annSeen[id])) return;
+  const seen = Object.assign({}, F.annSeen || {}); seen[id] = dayKey(Date.now());
+  const cutoff = dayKey(Date.now() - 90 * 864e5);
+  Object.keys(seen).forEach(function (k) { if (!isDate(seen[k]) || seen[k] < cutoff) delete seen[k]; });
+  saveFeed(Object.assign({}, F, { annSeen: seen }));
+}
+function newsPanelHTML() {
+  const F = S.feed || {}, all = F.news || [];
+  if (!all.length) return '';
+  const seen = F.annSeen || {}, unread = all.filter(function (a) { return !seen[a.id]; }).length;
+  const list = ui.annAll ? all : all.slice(0, 3);
+  const rows = list.map(function (a) {
+    const open = ui.annOpen === a.id, t = Date.parse(a.at), when = isNaN(t) ? '' : shortDay(dayKey(t));
+    return '<li class="ann' + (open ? ' open' : '') + (seen[a.id] ? '' : ' new') + '"><button class="ann-h" type="button" data-act="ann-open" data-id="' + esc(a.id) + '" aria-expanded="' + open + '">' +
+      '<small>' + (seen[a.id] ? '' : '<span class="ann-new">NEW</span>') + esc(courseLabel(a.code) || 'Canvas') + (when ? ' · ' + esc(when) : '') + '</small><b>' + esc(a.title || 'Announcement') + '</b>' +
+      (open ? '' : '<span class="ann-p">' + esc(a.text.replace(/\s+/g, ' ').slice(0, 140)) + '</span>') + '</button>' +
+      (open ? '<div class="ann-body">' + esc(a.text || '').replace(/\n/g, '<br>') + (a.url ? '<p><a class="link" href="' + esc(a.url) + '" target="_blank" rel="noopener">OPEN IN CANVAS</a></p>' : '') + '</div>' : '') + '</li>';
+  }).join('');
+  return '<section class="panel a-news" aria-label="Announcements"><div class="ph"><span class="ph-t">Announcements</span><span class="ph-m">' + (unread ? unread + ' NEW' : 'ALL READ') + '</span></div>' +
+    '<ul class="ann-list">' + rows + '</ul>' + (all.length > 3 ? '<div class="row" style="margin-top:8px"><button class="link" type="button" data-act="ann-all">' + (ui.annAll ? 'SHOW LESS' : 'SHOW ALL ' + all.length) + '</button></div>' : '') + '</section>';
 }
 
 /* ================= TOASTS ================= */
@@ -4543,7 +4629,7 @@ function viewHQ(D) {
   const ns = (S.sugg || []).length;
   const intel = '<section class="panel a-intel" aria-label="Board"><div class="ph"><span class="ph-t">Board</span><a class="link ph-m" href="#ops">OPEN BOARD →</a></div><ul class="intel">' + rows + '</ul>' + (D.open[0].length ? '<button class="btn amber" type="button" data-act="triage">SORT ' + D.open[0].length + ' NEW</button>' : '') +
     (ns ? '<a class="btn hud" href="#ops">REVIEW ' + ns + ' CLAUDE TIP' + (ns === 1 ? '' : 'S') + '</a>' : '') + '</section>';
-  return '<div class="hq"><div class="hq-col">' + you + deploy + planPanelHTML() + notesPanelHTML() + '</div><div class="hq-col">' + schedPanelHTML() + feedPanelHTML(D) + gradesPanelHTML() + intel + '</div></div>';
+  return '<div class="hq"><div class="hq-col">' + you + deploy + planPanelHTML() + notesPanelHTML() + '</div><div class="hq-col">' + schedPanelHTML() + feedPanelHTML(D) + gradesPanelHTML() + newsPanelHTML() + intel + '</div></div>';
 }
 function opCardHTML(op, D) {
   if (op.repeat) return rtCardHTML(op, D);
@@ -4563,7 +4649,7 @@ function editHTML() {
     '<div class="field"><span>Estimated windows</span><div class="chips">' + [0, 1, 2, 3, 4, 6, 8].map(function (n) { return '<button type="button" class="chipbtn num" data-act="edit-set" data-k="est" data-v="' + n + '" aria-pressed="' + ((e.est || 0) === n) + '">' + (n || '—') + '</button>'; }).join('') + '</div></div>' +
     '<div class="field"><label for="edit-due">Deadline (optional)</label><input class="inp" type="date" id="edit-due" data-bind="edit.due" value="' + esc(e.due || '') + '"></div>' +
     '<div class="field"><span>Why it matters</span>' + (S.ops[e.id] ? payoffHTML(S.ops[e.id]) : '') + '</div>' +
-    (e.src === 'canvas' ? '<div class="field"><span>Source</span><p class="srcnote">Pulled from Canvas' + (e.course ? ' · ' + esc(courseLabel(e.course)) : '') + '. ' + (e.autoTier !== false ? 'Tier follows the due date until you pick one.' : 'Tier is set by you.') + '</p>' + (/^https:\/\//.test(e.link || '') ? '<a class="link" href="' + esc(e.link) + '" target="_blank" rel="noopener">OPEN IN GOOGLE CALENDAR ↗</a>' : '') + '</div>' : '') +
+    (e.src === 'canvas' ? '<div class="field"><span>Source</span><p class="srcnote">Pulled from Canvas' + (e.course ? ' · ' + esc(courseLabel(e.course)) : '') + '. ' + (e.autoTier !== false ? 'Tier follows the due date until you pick one.' : 'Tier is set by you.') + '</p>' + (/^https:\/\//.test(e.link || '') ? '<a class="link" href="' + esc(e.link) + '" target="_blank" rel="noopener">' + (/calendar\.google\.com/.test(e.link) ? 'OPEN IN GOOGLE CALENDAR ↗' : 'OPEN IN CANVAS ↗') + '</a>' : '') + '</div>' : '') +
     '<div class="row"><button class="btn sm solid" type="button" data-act="edit-save">SAVE</button><button class="btn sm danger" type="button" data-act="shred" data-id="' + e.id + '">' + (ui.confirmShred === e.id ? 'CONFIRM SHRED' : 'SHRED') + '</button></div></div>';
 }
 function viewOps(D) {
@@ -5132,6 +5218,8 @@ document.addEventListener('click', function (ev) {
     case 'settings': openSettings(); break;
     case 'close-mod': closeModal(); break;
     case 'courses': coursesOpen(); break;
+    case 'ann-open': ui.annOpen = ui.annOpen === id ? null : id; if (ui.annOpen) annMarkSeen(id); render(); break;
+    case 'ann-all': ui.annAll = !ui.annAll; render(); break;
     case 'crs-save-all': coursesSave(); break;
     case 'quick-tier': ui.draft.quickTier = Number(v); Sfx.ui('t' + v); render(); break;
     case 'edit':

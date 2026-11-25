@@ -7,9 +7,12 @@ when something changes, so the app knows when there is something new.
 
 Optional: with a Canvas access token in the CANVAS_TOKEN secret, it also saves each
 class's name and current grade, which assignments you already submitted (the app marks
-those done), and missing work. The token is never printed.
+those done), missing work, recent announcements (as plain text) and when the token
+runs out. The token is never printed.
 """
 import datetime as dt
+import hashlib
+import html.parser
 import json
 import os
 import re
@@ -91,6 +94,57 @@ def api_get(base, path, params):
     return out
 
 
+class _Text(html.parser.HTMLParser):
+    """Announcement bodies are HTML. Keep only the words; links, images and scripts are dropped."""
+    BLOCK = {"p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts, self.skip = [], 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style"):
+            self.skip += 1
+        elif tag in self.BLOCK:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style") and self.skip:
+            self.skip -= 1
+        elif tag in self.BLOCK:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        if not self.skip:
+            self.parts.append(data)
+
+
+def plain_text(markup, limit=1500):
+    parser = _Text()
+    try:
+        parser.feed(str(markup or ""))
+        parser.close()
+    except Exception:
+        return ""
+    text = re.sub(r"[ \t\u00a0]+", " ", "".join(parser.parts))
+    text = re.sub(r"\s*\n\s*", "\n", text).strip()
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text[:limit].rstrip() + ("…" if len(text) > limit else "")
+
+
+def token_expiry(base):
+    """When the token runs out, from Canvas if it says; otherwise None."""
+    secret = TOKEN.split("~", 1)[-1]
+    for hint in dict.fromkeys([secret[:5], TOKEN[:5]]):
+        try:
+            data = api_get(base, "/users/self/tokens/" + urllib.parse.quote(hint, safe=""), {})
+        except Exception:
+            continue
+        if data and isinstance(data[0], dict) and data[0].get("expires_at"):
+            return data[0]["expires_at"]
+    return None
+
+
 def pick_score(enrollment):
     if enrollment.get("multiple_grading_periods_enabled") and enrollment.get("current_period_computed_current_score") is not None:
         return enrollment.get("current_period_computed_current_score"), enrollment.get("current_period_computed_current_grade")
@@ -151,7 +205,27 @@ def school_data(items, now):
         result.append(entry)
     result.sort(key=lambda c: c["name"].lower())
     missing.sort(key=lambda m: m["due"])
-    return {"courses": result, "status": status, "missing": missing[:20]}
+    news = []
+    if result:
+        try:
+            posts = api_get(base, "/announcements", {"context_codes[]": ["course_" + c["id"] for c in result], "start_date": (now - dt.timedelta(days=21)).strftime("%Y-%m-%dT%H:%M:%SZ"), "end_date": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "active_only": "true", "per_page": 50}) or []
+        except Exception:
+            posts = []
+        code_of = {c["id"]: c["code"] for c in result}
+        for post in posts:
+            if not isinstance(post, dict) or not post.get("id"):
+                continue
+            cid = str(post.get("context_code", "")).replace("course_", "")
+            news.append({"id": str(post["id"]), "code": code_of.get(cid, ""), "title": str(post.get("title") or "")[:200],
+                         "text": plain_text(post.get("message")), "at": post.get("posted_at") or "", "url": post.get("html_url") or ""})
+        news.sort(key=lambda a: a["at"], reverse=True)
+    school = {"courses": result, "status": status, "missing": missing[:20], "announcements": news[:20],
+              "token": hashlib.sha256(TOKEN.encode()).hexdigest()[:8]}
+    expires = token_expiry(base)
+    if expires:
+        school["tokenExpires"] = expires
+    print("Token expiry: " + (expires[:10] if expires else "Canvas did not say (the app counts 30 days from when it first sees this token)."))
+    return school
 
 
 def main():
@@ -208,13 +282,15 @@ def main():
     school = school_data(items, now)
     if school and "error" in school:
         # keep the last grades we had, marked as not current, so the app can say what to fix
-        for key in ("courses", "status", "missing"):
+        for key in ("courses", "status", "missing", "announcements", "token", "tokenExpires", "tokenSince"):
             if previous and key in previous:
                 data[key] = previous[key]
         data["schoolError"] = school["error"]
         school = None
     elif school:
         data.update(school)
+        # remember when this token first showed up, for the renew reminder
+        data["tokenSince"] = previous.get("tokenSince") if previous and previous.get("token") == school["token"] and previous.get("tokenSince") else now.strftime("%Y-%m-%dT%H:%M:%SZ")
     extra = f", {len(school['courses'])} classes with grades" if school else ""
     if previous == data:
         print(f"No changes ({len(items)} assignments{extra}).")

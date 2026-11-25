@@ -29,7 +29,7 @@ Assignments due this week (from Canvas, or ops in the School area) get their own
 
 Canvas tags each class with a section number. Tap **NAME THEM** on HQ (or a course chip) to give each one a short name; the screen lists a few assignments under each number so you can tell which class it is. Old copies of a Canvas assignment (from an earlier import, or typed by hand with the same title and due date) are merged into the one coming from Canvas, keeping anything already done on them.
 
-With an optional Canvas access token (see [`sync-template/`](sync-template/)), HQ also shows a **Grades** panel with each class's current grade and missing work, classes get their real names, and assignments you already turned in are marked done on their own.
+With an optional Canvas access token (see [`sync-template/`](sync-template/)), HQ also shows a **Grades** panel with each class's current grade and missing work, recent **Announcements**, classes get their real names, and assignments you already turned in are marked done on their own. If your school limits tokens to 30 days, the app reminds you two days before yours runs out.
 
 ## Your data
 
@@ -37,6 +37,14 @@ With an optional Canvas access token (see [`sync-template/`](sync-template/)), H
 - **Settings → Sync between devices** keeps your phone and computer in step through a private GitHub repo you own. Everything is encrypted on the device with your passphrase before it leaves, so the repo only holds unreadable data. Canvas assignments can come in through the same repo (see [the data repo setup](#canvas-and-sync-setup)).
 - **Settings → EXPORT BACKUP** saves everything to one `.json` file. Keep it in iCloud Drive or Google Drive.
 - **Settings → RESTORE BACKUP** loads a backup onto a device (for example a new phone).
+
+## Privacy
+
+- No accounts, trackers or ads. The app talks to one outside service only: GitHub's API, and only if you turn on sync.
+- The font is served from this site, so opening the app sends nothing to Google.
+- A Content Security Policy blocks the page from sending data anywhere else, even if something unexpected got into it.
+- Synced data is encrypted on your device (AES-256-GCM, key from your passphrase) before it leaves. The passphrase itself is never stored or uploaded.
+- Canvas data (assignment titles, grades, announcements) is written by the workflow in your private repo and is not encrypted there.
 
 ## Canvas and sync setup
 
@@ -64,6 +72,7 @@ For every change, bump both version numbers together:
 | `sw.js` | Offline cache and update handling |
 | `manifest.webmanifest` | Name, colors and icons for installing |
 | `icons/` | Home-screen icons |
+| `fonts/` | The Exo 2 font (SIL Open Font License) |
 | `sync-template/` | Files for your private sync repo, including the Canvas workflow |
 
 ## License
