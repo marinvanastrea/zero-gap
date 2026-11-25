@@ -838,6 +838,14 @@ textarea.inp#why-text{min-height:96px}
 .anc-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
 textarea.inp.anc-in{min-height:92px;padding:10px 12px;line-height:1.4}
 textarea.inp.anc-edit{min-height:96px}
+.anc-ideas{justify-content:center;width:100%;min-height:44px;color:var(--a-ac)}
+.anc-ex{display:grid;gap:8px;justify-items:start;margin-top:8px}
+.anc-extog{color:var(--a-ac)}
+.anc-exl{list-style:none;margin:0;padding:0;display:grid;gap:6px;width:100%}
+.anc-exl li{display:flex;align-items:center;gap:10px;padding:8px 6px 8px 12px;border-radius:12px;background:rgba(127,147,201,.06);box-shadow:inset 0 0 0 1px rgba(127,147,201,.18)}
+.anc-exl span{flex:1;min-width:0;font-size:14.5px;line-height:1.45;color:var(--dim)}
+.anc-exl .link{flex:none;min-height:40px;padding:0 8px;color:var(--a-ac)}
+.anc-exnone{margin:10px 0 0;font-size:13px;color:var(--mute)}
 .ibtn.anc-btn svg{width:19px;height:19px}
 .urge{position:fixed;inset:0;z-index:75;overflow:auto;display:flex;flex-direction:column;background:#020308;color:#a9b1c3;padding:calc(env(safe-area-inset-top,0px) + 14px) max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(18px,env(safe-area-inset-left,0px))}
 .urge-in{width:100%;max-width:520px;margin:0 auto;flex:1;display:flex;flex-direction:column;gap:12px}
@@ -1073,7 +1081,7 @@ const ui = {
   courseEdit: null, courseDraft: '', pinned: null, pinWhy: '',
   cal: { busy: false, del: null },
   notes: { draft: '', edit: null, editText: '', del: null, all: false, q: '', open: null },
-  anc: { drafts: {}, edit: null, editText: '', del: null }, urge: null
+  anc: { drafts: {}, edit: null, editText: '', del: null, ex: {} }, urge: null
 };
 let store = null;
 let lastD = null;
@@ -2962,7 +2970,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3587,12 +3595,80 @@ function viewAnchor() {
     return '<section class="panel anc-cat" aria-label="' + esc(c.n) + '"><div class="ph"><span class="ph-t">' + esc(c.n) + '</span></div>' +
       (list.length ? '<ul class="anc-list">' + list.map(function (r) { return anchorItemHTML(r, list); }).join('') + '</ul>' : '') +
       '<div class="anc-add"><label class="sr" for="anc-new-' + c.id + '">' + esc(c.q) + '</label><textarea class="inp anc-in" id="anc-new-' + c.id + '" data-bind="anc.drafts.' + c.id + '" rows="2" maxlength="600" placeholder="' + esc(c.q) + '">' + esc((ui.anc.drafts || {})[c.id] || '') + '</textarea>' +
-      '<button class="btn hud" type="button" data-act="anc-add" data-v="' + c.id + '">ADD</button></div></section>';
+      '<button class="btn hud" type="button" data-act="anc-add" data-v="' + c.id + '">ADD</button></div>' + anchorExHTML(c.id) + '</section>';
   }).join('');
   const backup = '<section class="panel anc-cat"><div class="ph"><span class="ph-t">Keep a copy</span></div><p class="hint" style="margin:0 0 12px">Your reasons stay on this device. Export saves them to a file you can keep; Import adds reasons from that file without removing any.</p>' +
     '<div class="row"><button class="btn sm" type="button" data-act="anc-export">EXPORT</button><button class="btn sm" type="button" data-act="anc-import">IMPORT</button></div></section>';
-  return '<div class="view anc">' + head + now + cats + backup + '</div>';
+  return '<div class="view anc">' + head + now + anchorIdeasHTML() + cats + backup + '</div>';
 }
+/* Example reasons, one tap to add. Adding never removes or changes what you already wrote; duplicates are skipped. */
+const ANCHOR_EXAMPLES = {
+  lose: [
+    'My peace and a clear conscience with God.',
+    'The trust I am building with myself.',
+    'A clear, focused mind tomorrow.',
+    'Seeing people as people, not as something to use.',
+    'The good work God has been doing in me lately.'
+  ],
+  give: [
+    'Real rest and a good night of sleep.',
+    'Waking up tomorrow feeling free and light.',
+    'Time I could give to prayer, people or my goals.',
+    'Lasting joy, for a few minutes that leave me empty.',
+    'My focus for school and the career I am building.'
+  ],
+  means: [
+    'I am someone who keeps my word, to God and to myself.',
+    'I am not ruled by a feeling. I choose what I do.',
+    'My body belongs to God, and I want to honor Him with it.',
+    'I want to be someone others can trust completely.',
+    'I am becoming who God made me to be, one choice at a time.'
+  ],
+  affects: [
+    'It clouds my mind and steals my focus the next day.',
+    'It drains my energy and motivation.',
+    'It makes me want to hide from God instead of running to Him.',
+    'It changes how I see people. I want to see them the way God does.',
+    'Choosing no leaves my mind clearer and my prayers more honest.'
+  ],
+  toward: [
+    'A clear conscience and deep peace with God.',
+    'Faithful, trustworthy love in my future relationships.',
+    'A mind that is free and focused on what matters.',
+    'Being someone others can lean on.',
+    'Freedom: a life with nothing to hide.'
+  ]
+};
+function anchorKey(cat, text) { return cat + '|' + String(text || '').trim().toLowerCase(); }
+function anchorExLeft(cat) { const have = new Set(anchorReasons().map(function (r) { return anchorKey(r.cat, r.text); })); return (ANCHOR_EXAMPLES[cat] || []).filter(function (t) { return !have.has(anchorKey(cat, t)); }); }
+function anchorAddTexts(pairs) {
+  const all = anchorReasons(), have = new Set(all.map(function (r) { return anchorKey(r.cat, r.text); }));
+  let added = 0;
+  pairs.forEach(function (p) {
+    const k = anchorKey(p[0], p[1]); if (have.has(k)) return;
+    have.add(k);
+    const ord = all.filter(function (x) { return x.cat === p[0]; }).reduce(function (m, x) { return Math.max(m, x.ord || 0); }, 0) + 1;
+    all.push({ id: uid('r'), cat: p[0], text: p[1], pin: false, ord: ord, at: Date.now() });
+    added++;
+  });
+  if (added) anchorSave(all);
+  return added;
+}
+function anchorExHTML(cat) {
+  const left = anchorExLeft(cat), open = !!(ui.anc.ex && ui.anc.ex[cat]);
+  if (!left.length) return '<p class="anc-exnone">All examples for this question are in your list.</p>';
+  let h = '<button class="link anc-extog" type="button" data-act="anc-ex" data-v="' + cat + '" aria-expanded="' + open + '">' + (open ? 'HIDE EXAMPLES' : 'EXAMPLES · ' + left.length) + '</button>';
+  if (open) {
+    h += '<ul class="anc-exl">' + left.map(function (t) { const i = ANCHOR_EXAMPLES[cat].indexOf(t); return '<li><span>' + esc(t) + '</span><button class="link" type="button" data-act="anc-ex-add" data-v="' + cat + '" data-i="' + i + '" aria-label="Add: ' + esc(t) + '">+ ADD</button></li>'; }).join('') + '</ul>' +
+      (left.length > 1 ? '<button class="btn sm" type="button" data-act="anc-ex-all" data-v="' + cat + '">ADD ALL ' + left.length + '</button>' : '');
+  }
+  return '<div class="anc-ex">' + h + '</div>';
+}
+function anchorIdeasHTML() {
+  const n = ANCHOR_CATS.reduce(function (s, c) { return s + anchorExLeft(c.id).length; }, 0);
+  return n ? '<button class="link anc-ideas" type="button" data-act="anc-ex-every">NEED IDEAS? ADD ' + n + ' EXAMPLES TO EVERY SECTION</button>' : '';
+}
+
 function urgeDeck() {
   const all = anchorReasons(), order = ANCHOR_CATS.map(function (c) { return c.id; });
   const pinned = all.filter(function (r) { return r.pin; }).sort(function (a, b) { return order.indexOf(a.cat) - order.indexOf(b.cat) || (a.ord || 0) - (b.ord || 0); });
@@ -4397,7 +4473,7 @@ function onEscape() {
   if (t) { ui.overlay = null; ui.secured = null; render(); }
 }
 const ACT_SFX = { manual: 'open', settings: 'open', dump: 'open', pick: 'open', triage: 'open', 'purge-open': 'warn', 'close-mod': 'close', 'promo-ok': 'close', dismiss: 'close', 'purge-cancel': 'close', 'crs-cancel': 'close', 'route-abort': 'abort', 'away-discard': 'abort', mins: 'blip', 'tri-res': 'blip', 'en-quota': 'blip', 'set-q': 'blip' };
-const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close', 'past-ok', 'anchor', 'urge', 'urge-next', 'urge-close', 'urge-act', 'urge-ok', 'urge-cancel', 'anc-add', 'anc-pin', 'anc-edit', 'anc-cancel', 'anc-save', 'anc-up', 'anc-down', 'anc-del', 'anc-export', 'anc-import']);
+const ACT_SELF = new Set(['deploy', 'pick-op', 'again', 'redeploy', 'wp-deploy', 'wp-breach', 'close-op', 'close-sec', 'shred', 'tri-tier', 'tri-shred', 'enlist', 'route-start', 'wp-next', 'pos', 'feed-sync', 'feed-link', 'set-test', 'minimize', 'restore', 'popout', 'end-break', 'purge', 'dump-save', 'break', 'away-log', 'sound-toggle', 'quick-tier', 'arm-audio', 'silence', 'note-add', 'off-copy', 'flex-start', 'flex-close', 'past-ok', 'anchor', 'urge', 'urge-next', 'urge-close', 'urge-act', 'urge-ok', 'urge-cancel', 'anc-add', 'anc-pin', 'anc-edit', 'anc-cancel', 'anc-save', 'anc-up', 'anc-down', 'anc-del', 'anc-export', 'anc-import', 'anc-ex', 'anc-ex-add', 'anc-ex-all', 'anc-ex-every']);
 document.addEventListener('click', function (ev) {
   const el = ev.target.closest('[data-act]');
   if (!el) return;
@@ -4549,6 +4625,10 @@ document.addEventListener('click', function (ev) {
     case 'anc-up': anchorMove(id, -1); break;
     case 'anc-down': anchorMove(id, 1); break;
     case 'anc-del': clearTimeout(ancDelT); if (ui.anc.del === id) { ui.anc.del = null; anchorSave(anchorReasons().filter(function (x) { return x.id !== id; })); } else { ui.anc.del = id; ancDelT = setTimeout(function () { ui.anc.del = null; scheduleRender(); }, 4000); render(); } break;
+    case 'anc-ex': ui.anc.ex = ui.anc.ex || {}; ui.anc.ex[v] = !ui.anc.ex[v]; render(); break;
+    case 'anc-ex-add': { const t = (ANCHOR_EXAMPLES[v] || [])[Number(el.dataset.i)]; if (t && anchorAddTexts([[v, t]])) toast('Added', t, 'good'); break; }
+    case 'anc-ex-all': { const n = anchorAddTexts(anchorExLeft(v).map(function (t) { return [v, t]; })); if (n) toast('Added ' + n + ' examples', 'Edit or delete any that do not fit you.', 'good'); break; }
+    case 'anc-ex-every': { const pairs = []; ANCHOR_CATS.forEach(function (c) { anchorExLeft(c.id).forEach(function (t) { pairs.push([c.id, t]); }); }); const n = anchorAddTexts(pairs); if (n) toast('Added ' + n + ' examples', 'Your own reasons are untouched. Edit or delete any that do not fit you.', 'good'); break; }
     case 'anc-export': anchorExport(); break;
     case 'anc-import': { const inp = document.getElementById('anc-in'); if (inp) inp.click(); break; }
     case 'past': pastOpen(id); break;
