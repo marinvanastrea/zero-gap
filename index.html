@@ -850,6 +850,15 @@ textarea.inp.anc-edit{min-height:96px}
 .hq .a-plan{order:2}
 .pl-days{display:grid;gap:12px}
 .pl-day .lbl{margin-bottom:6px}
+.pl-nudge{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--hud-dim);font-size:14px}
+.cchip.unnamed{box-shadow:inset 0 0 0 1px var(--hud);color:var(--hud)}
+.crs-row{padding:12px 0;border-top:1px dashed var(--line)}
+.crs-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.crs-ok,.crs-new{font:700 10.5px/1 var(--f-ui);letter-spacing:.12em;color:var(--mute)}
+.crs-new{color:var(--hud)}
+.crs-row .inp{width:100%}
+.crs-ex{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--mute);overflow-wrap:anywhere}
+.crs-ex span{font-weight:700}
 .pl-day.today .lbl{color:var(--hud)}
 .pl-day.past{opacity:.55}
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -2315,6 +2324,7 @@ function feedPanelHTML(D) {
   let body = remPanelHTML() + '<div class="lbl" style="margin-top:14px">Canvas feed</div>';
   if (f.avail === false || (f.avail === null && !MCP)) {
     body += '<p class="feed-msg">' + (f.avail === null ? 'Connecting to your calendar…' : (isApp() ? canvasFeedMsg() : 'Calendar sync runs when this page is open inside Claude, on the web or in the app.')) + '</p>';
+    if (isApp()) { const cc = courseCodes(); if (cc.length) body += '<div class="courses"><span class="lbl">Courses</span>' + cc.map(function (c) { return '<button type="button" class="cchip' + ((F && F.courses && F.courses[c]) ? '' : ' unnamed') + '" data-act="courses" title="Rename">' + esc(courseLabel(c)) + '</button>'; }).join('') + '</div>'; }
   } else if (!linked) {
     body += '<p class="feed-msg">Pull every Canvas due date onto your board automatically, from the Canvas calendar in your Google Calendar. Nothing to type each week.</p><div class="feed-acts"><button class="btn hud" type="button" data-act="feed-link">LINK CANVAS</button></div>';
   } else {
@@ -2987,7 +2997,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3868,7 +3878,7 @@ function planSync(force) {
   patchHQ({ plan: next });
 }
 let planT = 0;
-function schedulePlan() { clearTimeout(planT); planT = setTimeout(function () { try { planSync(false); } catch (e) { console.warn('[zerogap] plan', e); } }, 1200); }
+function schedulePlan() { clearTimeout(planT); planT = setTimeout(function () { try { canvasDedupe(); } catch (e) { console.warn('[zerogap] cleanup', e); } try { planSync(false); } catch (e) { console.warn('[zerogap] plan', e); } }, 1200); }
 function planItems() { const p = S.hq && S.hq.plan; return p && p.week === dayKey(planWeekStart().getTime()) ? (p.items || []) : []; }
 function planItemDone(it) { const o = S.ops[it.op]; return !!(it.done || (o && o.status === 'closed')); }
 function planToday() {
@@ -3896,7 +3906,7 @@ function planPanelHTML() {
   const items = planItems();
   if (!items.length) return '';
   const weekMon = planWeekStart(), todayK = dayKey(Date.now()), left = items.filter(function (it) { return !planItemDone(it); }).length;
-  const days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k, i) { return i < 5 || items.some(function (it) { return it.day === k; }); });
+  const days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k, i) { return items.some(function (it) { return it.day === k; }) || (i < 5 && k >= todayK); });
   const rows = days.map(function (k) {
     const its = items.filter(function (it) { return it.day === k; }), past = k < todayK;
     const label = (k === todayK ? 'TODAY · ' : '') + shortDay(k).toUpperCase().replace(/^TODAY$/, DOW[parseDay(k).getDay()] + ' ' + parseDay(k).getDate());
@@ -3908,7 +3918,7 @@ function planPanelHTML() {
       }).join('') + '</ul>' : '<p class="pl-free">' + (past ? '—' : 'Free') + '</p>') + '</div>';
   }).join('');
   return '<section class="panel a-plan" aria-label="This week"><div class="ph"><span class="ph-t">This week · mini deadlines</span><span class="ph-m">' + (left ? left + ' TO GO' : 'ALL DONE') + '</span></div>' +
-    '<div class="pl-days">' + rows + '</div><div class="row" style="margin-top:10px"><button class="link" type="button" data-act="plan-replan">REPLAN THE REST OF THE WEEK</button></div></section>';
+    coursesNudgeHTML() + '<div class="pl-days">' + rows + '</div><div class="row" style="margin-top:10px"><button class="link" type="button" data-act="plan-replan">REPLAN THE REST OF THE WEEK</button></div></section>';
 }
 
 /* ================= SYNC (encrypted, through your private GitHub repo) ================= */
@@ -4028,7 +4038,12 @@ function syncMerge(base, local, remote) {
       if (v !== undefined) out.hq[k] = v;
     });
   }
-  out.feed = m3(base.feed, local.feed, remote.feed, newer);
+  const bf = base.feed || {};
+  out.feed = m3(base.feed, local.feed, remote.feed, function (l, r) {
+    if (!l || !r) return l || r;
+    const n = newer(l, r);
+    return Object.assign({}, n, { courses: mergeMap(bf.courses, l.courses, r.courses, function (a, b) { return n === r ? b : a; }), seen: Object.assign({}, l.seen, r.seen) });
+  });
   const ar = function (d) { const m = {}; ((d && d.reasons) || []).forEach(function (x) { if (x && x.id) m[x.id] = x; }); return m; };
   if (!local.anchor && !remote.anchor) out.anchor = null;
   else {
@@ -4112,12 +4127,13 @@ function canvasApply(events) {
   F.enabled = true; F.seen = F.seen || {}; F.courses = F.courses || {};
   const todayK = dayKey(Date.now());
   let created = 0, moved = 0;
+  const byExt = {}; Object.keys(S.ops).forEach(function (k) { const o = S.ops[k]; if (o && o.ext) byExt[o.ext] = o; });
   events.forEach(function (ev) { const ps = parseSummary(ev && ev.summary); if (ps.course && !F.courses[ps.course]) { const m = ps.title.match(/\b([A-Z]{3})\s?(\d{4}[A-Z]?)\b/); if (m) F.courses[ps.course] = m[1] + ' ' + m[2]; } });
   events.forEach(function (ev) {
     if (!ev || !ev.id) return;
     const due = eventDue(ev); if (!due || due < todayK) return;
     const ps = parseSummary(ev.summary); if (!ps.title) return;
-    const id = 'cv' + String(ev.id).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 180), ex = S.ops[id];
+    const id = 'cv' + String(ev.id).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 180), ex = S.ops[id] || byExt[String(ev.id)];
     if (!ex) {
       if (F.seen[ev.id]) return;
       const g = guessEffort(ps.title);
@@ -4160,6 +4176,113 @@ function initSync() {
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') syncNow(false); });
   setInterval(function () { if (document.visibilityState === 'visible') syncNow(false); }, 5 * 60000);
   const wait = setInterval(function () { if (S.ready) { clearInterval(wait); syncNow(false); } }, 500);
+}
+
+/* ================= COURSES + CANVAS CLEANUP ================= */
+/* Canvas tags each assignment with a section number like [12345.202720]. Courses lets you give each number a name.
+   Cleanup merges old copies of an assignment (from the earlier Google Calendar import, or typed by hand) into the
+   one that now comes straight from Canvas, keeping whatever you already did on the old copy. */
+function courseCodes() {
+  const F = S.feed || {}, seen = {}, cut = Date.now() - 60 * 864e5;
+  Object.keys(S.ops).forEach(function (k) {
+    const o = S.ops[k];
+    if (o && o.course && (o.status !== 'closed' || (o.closedAt || 0) > cut)) seen[o.course] = (seen[o.course] || 0) + (o.status !== 'closed' ? 1 : 0);
+  });
+  return Object.keys(seen).sort(function (a, b) {
+    const na = (F.courses || {})[a] ? 1 : 0, nb = (F.courses || {})[b] ? 1 : 0;
+    return na - nb || seen[b] - seen[a] || (a < b ? -1 : 1);
+  });
+}
+function courseUnnamed() {
+  const C = (S.feed && S.feed.courses) || {};
+  return courseCodes().filter(function (c) { return !C[c] && Object.keys(S.ops).some(function (k) { const o = S.ops[k]; return o && o.course === c && o.status !== 'closed'; }); });
+}
+function courseSamples(c) {
+  const seen = {};
+  return Object.keys(S.ops).map(function (k) { return S.ops[k]; })
+    .filter(function (o) { return o && o.course === c; })
+    .sort(function (a, b) { return (a.status === 'closed') - (b.status === 'closed') || String(a.due || '9').localeCompare(String(b.due || '9')); })
+    .map(function (o) { return o.title; })
+    .filter(function (t) { const k = t.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true; })
+    .slice(0, 3);
+}
+function courseSuggest(c) {
+  const m = courseSamples(c).join(' ').match(/\b([A-Z]{3})\s?(\d{4}[A-Z]?)\b/);
+  return m ? m[1] + ' ' + m[2] : '';
+}
+function coursesOpen() { ui.crsDraft = {}; ui.modal = 'courses'; render(); }
+function coursesSave() {
+  const F = Object.assign({}, S.feed || {}), c = Object.assign({}, F.courses || {}), dr = ui.crsDraft || {};
+  let n = 0;
+  Object.keys(dr).forEach(function (k) {
+    const v = String(dr[k] || '').trim().replace(/\s+/g, ' ').toUpperCase().slice(0, 24);
+    if (v) { if (c[k] !== v) { c[k] = v; n++; } } else if (c[k]) { delete c[k]; n++; }
+  });
+  F.courses = c; saveFeed(F);
+  ui.crsDraft = null; ui.modal = null;
+  toast(n ? 'Course names saved' : 'Nothing changed', n ? 'Your plan and board show them now.' : '', 'info');
+  render();
+}
+function coursesModalHTML() {
+  const C = (S.feed && S.feed.courses) || {}, dr = ui.crsDraft || (ui.crsDraft = {}), codes = courseCodes();
+  const rows = codes.length ? codes.map(function (c) {
+    const name = C[c] || '', val = dr[c] != null ? dr[c] : name, sm = courseSamples(c), sug = courseSuggest(c);
+    return '<div class="crs-row"><div class="crs-top"><label class="lbl" for="crs-' + esc(c) + '">Canvas #' + esc(c) + '</label>' +
+      (name ? '<span class="crs-ok">NAMED</span>' : '<span class="crs-new">NEEDS A NAME</span>') + '</div>' +
+      '<input class="inp" id="crs-' + esc(c) + '" data-bind="crsDraft.' + esc(c) + '" maxlength="24" placeholder="' + esc(sug || 'e.g. MATH') + '" value="' + esc(val) + '" autocomplete="off" autocapitalize="characters">' +
+      (sm.length ? '<p class="crs-ex"><span>In this class:</span> ' + sm.map(esc).join(' · ') + '</p>' : '') + '</div>';
+  }).join('') : '<p class="hint">No Canvas courses yet. They show up here after the first Canvas sync.</p>';
+  return '<div class="mod" role="dialog" aria-modal="true" aria-labelledby="crs-t"><div class="mcard"><div class="mhead"><div><div class="eyebrow">Canvas</div><h2 class="mtitle" id="crs-t">NAME YOUR COURSES</h2></div>' + closeX() + '</div>' +
+    '<p>Canvas tags every class with its section number. Give each one a short name you recognize. The assignments under each number tell you which class it is. New classes next term show up here on their own.</p>' +
+    rows + '<div class="row"><button class="btn solid" type="button" data-act="crs-save-all"' + (codes.length ? '' : ' disabled') + '>SAVE NAMES</button><button class="btn" type="button" data-act="close-mod">CANCEL</button></div></div></div>';
+}
+function coursesNudgeHTML() {
+  const n = courseUnnamed().length;
+  return n ? '<div class="pl-nudge"><span>' + n + ' Canvas course' + (n === 1 ? ' needs a name' : 's need a name') + ' so you can tell them apart.</span><button class="link" type="button" data-act="courses">NAME ' + (n === 1 ? 'IT' : 'THEM') + '</button></div>' : '';
+}
+function opNorm(t) { return String(t || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function isFeedOp(o) { return !!(o && o.src === 'canvas' && /assignment/i.test(String(o.ext || ''))); }
+function canvasDedupe() {
+  if (!S.ready || !store || !S.hq) return 0;
+  const all = Object.keys(S.ops).map(function (k) { return S.ops[k]; }).filter(function (o) { return o && o.title && !o.repeat; });
+  const fresh = all.filter(isFeedOp);
+  if (!fresh.length) return 0;
+  const byKey = {};
+  all.forEach(function (o) { if (!isFeedOp(o)) { const k = opNorm(o.title); if (k) (byKey[k] = byKey[k] || []).push(o); } });
+  const plan = S.hq.plan, gone = {}, taken = {};
+  let items = plan ? clone(plan.items || []) : null, planCh = false, n = 0;
+  fresh.forEach(function (f0) {
+    (byKey[opNorm(f0.title)] || []).forEach(function (o0) {
+      const f = S.ops[f0.id], o = S.ops[o0.id]; if (!f || !o || gone[o.id] || taken[o.id]) return;
+      if (o.course && f.course && o.course !== f.course) return;
+      const a = o.feedDue || o.due, b = f.feedDue || f.due;
+      if (!isDate(a) || !isDate(b) || Math.abs(parseDay(a).getTime() - parseDay(b).getTime()) > 1.5 * 864e5) return;
+      const keepOld = o.status === 'closed' || f.status !== 'closed';
+      const keep = keepOld ? o : f, drop = keepOld ? f : o;
+      let next = keep;
+      if (keepOld) {
+        next = Object.assign({}, o, { src: 'canvas', ext: f.ext, link: f.link || o.link, course: o.course || f.course, feedDue: f.feedDue || f.due });
+        if (o.status !== 'closed' && (!o.feedDue || o.due === o.feedDue)) next.due = f.due;
+      } else if (!f.notes && o.notes) next = Object.assign({}, f, { notes: o.notes });
+      Object.keys(S.days || {}).forEach(function (d) {
+        const bl = (S.days[d] && S.days[d].blocks) || {};
+        Object.keys(bl).forEach(function (bid) { if (bl[bid] && bl[bid].op === drop.id) store.addToDay(d, 'blocks', bid, Object.assign({}, bl[bid], { op: keep.id })); });
+      });
+      if (items) {
+        const has = items.some(function (it) { return it.op === keep.id; });
+        const before = items.length;
+        items = items.filter(function (it) { return it.op !== drop.id || !has; }).map(function (it) { return it.op === drop.id ? Object.assign({}, it, { op: keep.id, id: keep.id + '#' + it.i }) : it; });
+        if (items.length !== before || items.some(function (it) { return it.op === keep.id; })) planCh = true;
+      }
+      if (next !== keep) saveOp(next);
+      removeOp(drop.id); gone[drop.id] = true; taken[keep.id] = true; n++;
+    });
+  });
+  if (!n) return 0;
+  if (planCh && plan) patchHQ({ plan: Object.assign({}, plan, { items: items, at: Date.now() }) });
+  toast('Cleaned up ' + n + ' duplicate' + (n === 1 ? '' : 's'), 'Old copies of Canvas assignments were merged into one. Anything you already did on them is kept.', 'good');
+  render();
+  return n;
 }
 
 /* ================= TOASTS ================= */
@@ -4738,6 +4861,7 @@ function modalHTML(D) {
       '<p class="small">The pop-out works in Chrome and Edge on a computer, but some app views turn it off.</p><div class="row"><button class="btn" type="button" data-act="close-mod">GOT IT</button></div></div></div>';
   }
   if (m === 'past' && ui.past) return pastModalHTML();
+  if (m === 'courses') return coursesModalHTML();
   if (m === 'why' && ui.why) return whyModalHTML();
   if (m === 'restore' && ui.restore) return restoreModalHTML();
   if (m === 'away' && ui.away) {
@@ -4848,6 +4972,7 @@ function closeModal() {
   if (ui.modal === 'triage') { ui.triage = null; ui.modal = null; const n = derive().open[0].length; if (n) toast('Triage paused', n + ' still unsorted. Resume from the OPS board.', 'info'); render(); return; }
   if (ui.modal === 'settings') { ui.purgeOpen = false; ui.purgeText = ''; }
   if (ui.modal === 'restore') ui.restore = null;
+  if (ui.modal === 'courses') ui.crsDraft = null;
   if (ui.modal === 'case' && ui.caseBack) { ui.modal = 'day'; ui.dayK = ui.caseBack; ui.caseBack = null; render(); return; }
   if (ui.modal === 'debrief') { ui.debrief = null; ui.modal = ui.promoQueued ? 'promo' : null; ui.promoQueued = false; render(); return; }
   if (ui.modal === 'promo') ui.promo = 0;
@@ -4929,6 +5054,8 @@ document.addEventListener('click', function (ev) {
     case 'manual': ui.modal = 'manual'; render(); break;
     case 'settings': openSettings(); break;
     case 'close-mod': closeModal(); break;
+    case 'courses': coursesOpen(); break;
+    case 'crs-save-all': coursesSave(); break;
     case 'quick-tier': ui.draft.quickTier = Number(v); Sfx.ui('t' + v); render(); break;
     case 'edit':
       if (ui.expanded === id) { ui.expanded = null; ui.edit = null; } else if (S.ops[id]) { ui.expanded = id; ui.edit = clone(S.ops[id]); ui.edit.tier = S.ops[id].repeat ? (S.ops[id].tier || 0) : tierOf(S.ops[id]); ui.confirmShred = null; }

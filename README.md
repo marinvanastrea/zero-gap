@@ -27,6 +27,8 @@ INFIL routes add a quick stretch as a waypoint, and the 15-minute stand-down bre
 
 Assignments due this week (from Canvas, or ops in the School area) get their own mini deadlines, spread over Monday to Friday and well before the real deadline. Bigger ones are split into steps (Start → Keep going → Finish) on different days. Tick a step on HQ when it's done; ticking the last step closes the op. Unfinished steps move to today, and REPLAN rebuilds the rest of the week.
 
+Canvas tags each class with a section number. Tap **NAME THEM** on HQ (or a course chip) to give each one a short name; the screen lists a few assignments under each number so you can tell which class it is. Old copies of a Canvas assignment (from an earlier import, or typed by hand with the same title and due date) are merged into the one coming from Canvas, keeping anything already done on them.
+
 ## Your data
 
 - Saved on the device. Each device keeps its own copy until you turn on sync.
