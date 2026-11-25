@@ -1,10 +1,11 @@
 name: Canvas assignments
 
-# Every 4 hours, fetch the Canvas calendar feed and save upcoming assignments to canvas.json.
+# Every 2 hours, fetch the Canvas calendar feed and save upcoming assignments to canvas.json.
+# With the optional CANVAS_TOKEN secret it also saves class names, grades, submitted work and missing work.
 # ZERØ GAP reads that file when it syncs. Run it by hand from the Actions tab any time.
 on:
   schedule:
-    - cron: "23 */4 * * *"
+    - cron: "23 */2 * * *"
   workflow_dispatch:
 
 permissions:
@@ -24,6 +25,7 @@ jobs:
       - name: Fetch the Canvas feed
         env:
           CANVAS_FEED_URL: ${{ secrets.CANVAS_FEED_URL }}
+          CANVAS_TOKEN: ${{ secrets.CANVAS_TOKEN }}
         run: python3 scripts/canvas_feed.py
 
       - name: Save canvas.json if it changed

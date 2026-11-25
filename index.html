@@ -859,6 +859,20 @@ textarea.inp.anc-edit{min-height:96px}
 .crs-row .inp{width:100%}
 .crs-ex{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--mute);overflow-wrap:anywhere}
 .crs-ex span{font-weight:700}
+.hq .a-grades{order:5}
+.gr-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.gr-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--line);color:inherit;text-decoration:none}
+a.gr-row:hover,a.gr-row:focus-visible{box-shadow:inset 0 0 0 1px var(--hud-dim)}
+.gr-n{display:grid;gap:4px;min-width:0;font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
+.gr-miss{font:700 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--hud)}
+.gr-s{font:600 14px/1 var(--f-num);color:var(--mute)}
+.gr-g{min-width:46px;text-align:center;padding:8px 6px;border-radius:10px;font:800 16px/1 var(--f-ui);color:var(--hud);box-shadow:inset 0 0 0 1px var(--hud-dim)}
+.gr-g.none{font-size:11px;letter-spacing:.08em;color:var(--mute);box-shadow:inset 0 0 0 1px var(--line)}
+.gr-mlist{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.gr-mlist li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;font-size:14px}
+.gr-mlist small{grid-column:1;color:var(--mute);font-size:12.5px}
+.gr-mlist a{grid-column:2;grid-row:1/span 2;font:700 11px/1 var(--f-ui);letter-spacing:.1em;color:var(--hud);text-decoration:none;padding:8px 10px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--hud-dim)}
+.gr-err{margin-top:0}
 .pl-day.today .lbl{color:var(--hud)}
 .pl-day.past{opacity:.55}
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -2997,7 +3011,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -4042,7 +4056,7 @@ function syncMerge(base, local, remote) {
   out.feed = m3(base.feed, local.feed, remote.feed, function (l, r) {
     if (!l || !r) return l || r;
     const n = newer(l, r);
-    return Object.assign({}, n, { courses: mergeMap(bf.courses, l.courses, r.courses, function (a, b) { return n === r ? b : a; }), seen: Object.assign({}, l.seen, r.seen) });
+    return Object.assign({}, n, { courses: mergeMap(bf.courses, l.courses, r.courses, function (a, b) { return n === r ? b : a; }), seen: Object.assign({}, l.seen, r.seen), autoDone: Object.assign({}, l.autoDone, r.autoDone), cnames: Object.assign({}, l.cnames, r.cnames) });
   });
   const ar = function (d) { const m = {}; ((d && d.reasons) || []).forEach(function (x) { if (x && x.id) m[x.id] = x; }); return m; };
   if (!local.anchor && !remote.anchor) out.anchor = null;
@@ -4074,7 +4088,7 @@ async function syncNow(manual, tries) {
     syncBaseSave(merged);
     try {
       const cv = await ghGet(c, CANVAS_FILE);
-      if (cv && cv.sha !== c.canvasSha) { const j = JSON.parse(cv.text), evs = Array.isArray(j.events) ? j.events : []; canvasApply(evs); c.canvasSha = cv.sha; c.canvasN = evs.length; c.canvasAt = j.at ? Date.parse(j.at) || Date.now() : Date.now(); }
+      if (cv && cv.sha !== c.canvasSha) { const j = JSON.parse(cv.text), evs = Array.isArray(j.events) ? j.events : []; canvasApply(evs, j); c.canvasSha = cv.sha; c.canvasN = evs.length; c.canvasAt = j.at ? Date.parse(j.at) || Date.now() : Date.now(); }
       c.canvasOn = !!cv; if (!cv) c.canvasN = 0;
     } catch (e) { console.warn('[zerogap] canvas read', e && e.message); }
     c.lastAt = Date.now(); c.err = '';
@@ -4122,7 +4136,7 @@ async function syncConnect() {
 function syncDisconnect() { syncCfgSave(null); syncBaseSave(null); SY.err = ''; ui.sync = { repo: '', token: '', pass: '', busy: false, confirm: false }; toast('Sync turned off on this device', 'Your data stays here. Nothing was deleted.', 'info'); render(); }
 function canvasFeedMsg() { const c = syncCfg(); return c && c.canvasOn ? 'Canvas comes in through sync. Last update ' + (c.canvasAt ? calAgo(c.canvasAt).toLowerCase() : 'recently') + '. New assignments land on your board and in this week’s plan.' : 'Canvas assignments can come in automatically. Set it up in Settings → Sync between devices.'; }
 function syncDefaultRepo() { const h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/zero-gap-data' : ''; }
-function canvasApply(events) {
+function canvasApply(events, j) {
   const F = Object.assign({ horizon: 10 }, clone(S.feed) || {});
   F.enabled = true; F.seen = F.seen || {}; F.courses = F.courses || {};
   const todayK = dayKey(Date.now());
@@ -4136,6 +4150,7 @@ function canvasApply(events) {
     const id = 'cv' + String(ev.id).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 180), ex = S.ops[id] || byExt[String(ev.id)];
     if (!ex) {
       if (F.seen[ev.id]) return;
+      if (j && j.status && j.status[ev.id] && j.status[ev.id].done) { F.seen[ev.id] = due; return; }
       const g = guessEffort(ps.title);
       saveOp({ id: id, title: ps.title.slice(0, 140), tier: 2, res: g.res, est: g.est, due: due, code: codename(), status: 'open', created: Date.now() + created, closedAt: null, used: null, src: 'canvas', ext: String(ev.id), course: ps.course, feedDue: due, link: String(ev.htmlLink || ''), autoTier: true });
       F.seen[ev.id] = due; created++;
@@ -4146,6 +4161,8 @@ function canvasApply(events) {
   });
   const cutoff = dayKey(Date.now() - 45 * 86400000);
   Object.keys(F.seen).forEach(function (k) { if (!isDate(F.seen[k]) || F.seen[k] < cutoff) delete F.seen[k]; });
+  canvasSchool(j, F);
+  if (j && j.status) canvasAutoDone(j.status, F, byExt);
   F.lastSync = Date.now(); F.lastCount = events.length; F.via = 'github';
   saveFeed(F);
   if (created) toast(created + ' new from Canvas', 'Added to your board and this week’s plan.', 'good');
@@ -4157,7 +4174,7 @@ function syncSettingsHTML() {
   if (c) {
     return '<div class="audio-sec"><div class="lbl">Sync between devices</div>' +
       '<p>' + (SY.busy ? 'Syncing now…' : c.err ? 'Paused: ' + esc(c.err) + '.' : c.lastAt ? 'Synced ' + calAgo(c.lastAt).toLowerCase() + ' with <b>' + esc(c.repo) + '</b>. Encrypted with your passphrase.' : 'Connected to <b>' + esc(c.repo) + '</b>.') + '</p>' +
-      '<p class="small">Canvas: ' + (c.canvasOn ? 'updated ' + (c.canvasAt ? calAgo(c.canvasAt).toLowerCase() : 'recently') + ' · ' + (c.canvasN || 0) + ' items in the feed.' : 'not set up yet (add the CANVAS_FEED_URL secret to the repo).') + '</p>' +
+      '<p class="small">Canvas: ' + (c.canvasOn ? 'updated ' + (c.canvasAt ? calAgo(c.canvasAt).toLowerCase() : 'recently') + ' · ' + (c.canvasN || 0) + ' items in the feed' + (S.feed && S.feed.grades ? (S.feed.grades.err ? ' · grades paused (token)' : ' · grades on') : '') + '.' : 'not set up yet (add the CANVAS_FEED_URL secret to the repo).') + '</p>' +
       '<div class="row"><button class="btn sm hud" type="button" data-act="sync-now"' + (SY.busy ? ' disabled' : '') + '>SYNC NOW</button>' +
       (f.confirm ? '<button class="btn sm danger" type="button" data-act="sync-off">TAP AGAIN TO TURN OFF</button>' : '<button class="btn sm" type="button" data-act="sync-off">TURN OFF ON THIS DEVICE</button>') + '</div></div>';
   }
@@ -4230,6 +4247,7 @@ function coursesModalHTML() {
     return '<div class="crs-row"><div class="crs-top"><label class="lbl" for="crs-' + esc(c) + '">Canvas #' + esc(c) + '</label>' +
       (name ? '<span class="crs-ok">NAMED</span>' : '<span class="crs-new">NEEDS A NAME</span>') + '</div>' +
       '<input class="inp" id="crs-' + esc(c) + '" data-bind="crsDraft.' + esc(c) + '" maxlength="24" placeholder="' + esc(sug || 'e.g. MATH') + '" value="' + esc(val) + '" autocomplete="off" autocapitalize="characters">' +
+      ((S.feed && S.feed.cnames && S.feed.cnames[c]) ? '<p class="crs-ex"><span>Canvas calls it:</span> ' + esc(S.feed.cnames[c]) + '</p>' : '') +
       (sm.length ? '<p class="crs-ex"><span>In this class:</span> ' + sm.map(esc).join(' · ') + '</p>' : '') + '</div>';
   }).join('') : '<p class="hint">No Canvas courses yet. They show up here after the first Canvas sync.</p>';
   return '<div class="mod" role="dialog" aria-modal="true" aria-labelledby="crs-t"><div class="mcard"><div class="mhead"><div><div class="eyebrow">Canvas</div><h2 class="mtitle" id="crs-t">NAME YOUR COURSES</h2></div>' + closeX() + '</div>' +
@@ -4283,6 +4301,65 @@ function canvasDedupe() {
   toast('Cleaned up ' + n + ' duplicate' + (n === 1 ? '' : 's'), 'Old copies of Canvas assignments were merged into one. Anything you already did on them is kept.', 'good');
   render();
   return n;
+}
+
+/* ================= GRADES + SUBMITTED WORK (optional Canvas token) ================= */
+/* With a Canvas token in the private repo, canvas.json also carries each class's name and current grade,
+   missing work, and which assignments were already submitted. Submitted ones are marked done here. */
+function httpsUrl(u) { u = String(u || ''); return /^https:\/\//i.test(u) ? u.slice(0, 500) : ''; }
+function canvasSchool(j, F) {
+  if (!j || !Array.isArray(j.courses)) { delete F.grades; return; }
+  F.cnames = Object.assign({}, F.cnames || {});
+  F.grades = {
+    at: Date.parse(j.at) || Date.now(), err: String(j.schoolError || ''),
+    courses: j.courses.slice(0, 30).map(function (c) {
+      return { id: String(c.id || ''), code: String(c.code || '').slice(0, 40), name: String(c.name || '').slice(0, 80), short: String(c.short || '').slice(0, 24), score: typeof c.score === 'number' ? c.score : null, grade: c.grade ? String(c.grade).slice(0, 6) : '', missing: clampInt(c.missing, 0, 99, 0), url: httpsUrl(c.url) };
+    }),
+    missing: (Array.isArray(j.missing) ? j.missing : []).slice(0, 20).map(function (m) { return { title: String(m.title || '').slice(0, 140), code: String(m.code || '').slice(0, 40), due: String(m.due || '').slice(0, 30), url: httpsUrl(m.url) }; })
+  };
+  F.grades.courses.forEach(function (c) {
+    if (!c.code) return;
+    if (c.name) F.cnames[c.code] = c.name;
+    if (!F.courses[c.code] && c.short) F.courses[c.code] = c.short.toUpperCase().slice(0, 24);
+  });
+}
+function canvasAutoDone(st, F, byExt) {
+  F.autoDone = Object.assign({}, F.autoDone || {});
+  let n = 0, used = null;
+  Object.keys(st || {}).forEach(function (uid) {
+    const s = st[uid]; if (!s || !s.done || F.autoDone[uid]) return;
+    F.autoDone[uid] = dayKey(Date.now());
+    const op = S.ops['cv' + uid.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 180)] || byExt[uid];
+    if (!op || op.status === 'closed' || op.repeat) return;
+    used = used || derive().used;
+    const at = Math.min(Date.now(), Date.parse(s.at) || Date.now());
+    saveOp(Object.assign({}, op, { status: 'closed', closedAt: at, used: used[op.id] || 0, tier: tierOf(op), autoTier: false, doneVia: 'canvas' }));
+    n++;
+  });
+  const cutoff = dayKey(Date.now() - 60 * 864e5);
+  Object.keys(F.autoDone).forEach(function (k) { if (!isDate(F.autoDone[k]) || F.autoDone[k] < cutoff) delete F.autoDone[k]; });
+  if (n) toast(n + ' marked done from Canvas', 'You already turned ' + (n === 1 ? 'it' : 'them') + ' in. Your plan is updated.', 'good');
+  return n;
+}
+function gradesPanelHTML() {
+  const F = S.feed || {}, G = F.grades;
+  if (!G || !G.courses || !G.courses.length) return '';
+  const rows = G.courses.map(function (c) {
+    const label = (F.courses || {})[c.code] || (c.short ? c.short.toUpperCase() : c.name);
+    const inner = '<span class="gr-n">' + esc(label) + (c.missing ? '<span class="gr-miss">' + c.missing + ' missing</span>' : '') + '</span>' +
+      '<span class="gr-s">' + (c.score == null ? '—' : esc(String(Math.round(c.score * 10) / 10)) + '%') + '</span>' +
+      '<span class="gr-g' + (c.grade ? '' : ' none') + '">' + esc(c.grade || (c.score == null ? 'N/A' : '—')) + '</span>';
+    return '<li>' + (c.url ? '<a class="gr-row" href="' + esc(c.url) + '" target="_blank" rel="noopener" aria-label="' + esc(label) + ' grades in Canvas">' + inner + '</a>' : '<div class="gr-row">' + inner + '</div>') + '</li>';
+  }).join('');
+  const miss = (G.missing || []).slice(0, 5).map(function (m) {
+    const t = Date.parse(m.due), when = isNaN(t) ? '' : ' · was due ' + shortDay(dayKey(t));
+    return '<li><span>' + esc(m.title) + '</span><small>' + esc(courseLabel(m.code)) + when + '</small>' + (m.url ? '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">OPEN</a>' : '') + '</li>';
+  }).join('');
+  const err = G.err === 'token' ? '<p class="feed-msg gr-err">Canvas stopped accepting your token, so these are your grades from ' + esc(calAgo(G.at).toLowerCase()) + '. Make a new token in Canvas (Account → Settings) and paste it into the CANVAS_TOKEN secret.</p>' : '';
+  return '<section class="panel a-grades" aria-label="Grades"><div class="ph"><span class="ph-t">Grades</span><span class="ph-m">' + (G.err ? 'NOT CURRENT' : 'FROM CANVAS') + '</span></div>' + err +
+    '<ul class="gr-list">' + rows + '</ul>' +
+    (miss ? '<div class="lbl" style="margin-top:14px">Missing work · ' + (G.missing.length) + '</div><ul class="gr-mlist">' + miss + '</ul>' : '') +
+    '<p class="small" style="margin:10px 0 0">Tap a class to open its grades in Canvas.</p></section>';
 }
 
 /* ================= TOASTS ================= */
@@ -4466,7 +4543,7 @@ function viewHQ(D) {
   const ns = (S.sugg || []).length;
   const intel = '<section class="panel a-intel" aria-label="Board"><div class="ph"><span class="ph-t">Board</span><a class="link ph-m" href="#ops">OPEN BOARD →</a></div><ul class="intel">' + rows + '</ul>' + (D.open[0].length ? '<button class="btn amber" type="button" data-act="triage">SORT ' + D.open[0].length + ' NEW</button>' : '') +
     (ns ? '<a class="btn hud" href="#ops">REVIEW ' + ns + ' CLAUDE TIP' + (ns === 1 ? '' : 'S') + '</a>' : '') + '</section>';
-  return '<div class="hq"><div class="hq-col">' + you + deploy + planPanelHTML() + notesPanelHTML() + '</div><div class="hq-col">' + schedPanelHTML() + feedPanelHTML(D) + intel + '</div></div>';
+  return '<div class="hq"><div class="hq-col">' + you + deploy + planPanelHTML() + notesPanelHTML() + '</div><div class="hq-col">' + schedPanelHTML() + feedPanelHTML(D) + gradesPanelHTML() + intel + '</div></div>';
 }
 function opCardHTML(op, D) {
   if (op.repeat) return rtCardHTML(op, D);

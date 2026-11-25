@@ -29,6 +29,8 @@ Assignments due this week (from Canvas, or ops in the School area) get their own
 
 Canvas tags each class with a section number. Tap **NAME THEM** on HQ (or a course chip) to give each one a short name; the screen lists a few assignments under each number so you can tell which class it is. Old copies of a Canvas assignment (from an earlier import, or typed by hand with the same title and due date) are merged into the one coming from Canvas, keeping anything already done on them.
 
+With an optional Canvas access token (see [`sync-template/`](sync-template/)), HQ also shows a **Grades** panel with each class's current grade and missing work, classes get their real names, and assignments you already turned in are marked done on their own.
+
 ## Your data
 
 - Saved on the device. Each device keeps its own copy until you turn on sync.

@@ -3,18 +3,26 @@
 
 The feed link comes from the CANVAS_FEED_URL repository secret and is never printed.
 Only assignments from 3 days ago to 45 days ahead are kept. The file is rewritten only
-when the assignments change, so the app knows when there is something new.
+when something changes, so the app knows when there is something new.
+
+Optional: with a Canvas access token in the CANVAS_TOKEN secret, it also saves each
+class's name and current grade, which assignments you already submitted (the app marks
+those done), and missing work. The token is never printed.
 """
 import datetime as dt
 import json
 import os
 import re
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
 
 FEED = os.environ.get("CANVAS_FEED_URL", "").strip()
+TOKEN = os.environ.get("CANVAS_TOKEN", "").strip()
 OUT = os.environ.get("CANVAS_OUT", "canvas.json")
+API = os.environ.get("CANVAS_API", "").strip()  # only for tests; normally taken from the feed link
 
 
 def unescape(value):
@@ -41,6 +49,109 @@ def parse_start(value, params):
             when = naive.replace(tzinfo=dt.timezone.utc)
     utc = when.astimezone(dt.timezone.utc)
     return {"dateTime": utc.strftime("%Y-%m-%dT%H:%M:%SZ")}, utc
+
+
+def short_code(text):
+    return re.sub(r"[^A-Za-z0-9_-]", "", str(text or "").split(".")[0])[:40]
+
+
+def short_name(name, fallback):
+    """A name that fits on a chip: 'College Algebra', or the course code like 'SLS 1122' when the name is long."""
+    name = str(name or "")
+    clean = re.sub(r"\b\d{4,}(\.\d+)?\b", " ", name)
+    clean = re.sub(r"\b(fall|spring|summer|winter)\b\s*\d{0,4}", " ", clean, flags=re.I)
+    clean = re.sub(r"[\s_|:()\[\]]+", " ", clean).strip(" -.")
+    code = re.search(r"\b([A-Z]{3})\s?(\d{4}[A-Z]?)\b", name)
+    bare = re.sub(r"\b[A-Z]{3}\s?\d{4}[A-Z]?\b", " ", clean)
+    tidy = lambda t: re.sub(r"\s+", " ", re.sub(r"-(?=\s|$)|(?<=\s)-|^-", " ", t)).strip(" -.")
+    clean = tidy(bare) or tidy(clean)
+    if clean and len(clean) <= 24:
+        return clean
+    if code:
+        return f"{code.group(1)} {code.group(2)}"
+    return (clean[:24].rsplit(" ", 1)[0] if clean else fallback)[:24]
+
+
+def api_get(base, path, params):
+    """GET every page of a Canvas API list. Returns None if the token is rejected."""
+    url = base + path + "?" + urllib.parse.urlencode(params, doseq=True)
+    out, pages = [], 0
+    while url and pages < 15:
+        request = urllib.request.Request(url, headers={"Authorization": "Bearer " + TOKEN, "Accept": "application/json", "User-Agent": "zero-gap-canvas-sync"})
+        try:
+            response = urllib.request.urlopen(request, timeout=30)
+        except urllib.error.HTTPError as exc:
+            if exc.code in (401, 403):
+                return None
+            raise
+        data = json.loads(response.read().decode("utf-8"))
+        out.extend(data if isinstance(data, list) else [data])
+        match = re.search(r'<([^>]+)>;\s*rel="next"', response.headers.get("Link", ""))
+        url, pages = (match.group(1) if match else None), pages + 1
+    return out
+
+
+def pick_score(enrollment):
+    if enrollment.get("multiple_grading_periods_enabled") and enrollment.get("current_period_computed_current_score") is not None:
+        return enrollment.get("current_period_computed_current_score"), enrollment.get("current_period_computed_current_grade")
+    return enrollment.get("computed_current_score"), enrollment.get("computed_current_grade")
+
+
+def school_data(items, now):
+    """Course names, grades, submitted assignments and missing work, from the Canvas API."""
+    host = urllib.parse.urlparse(FEED).netloc
+    base = API or (f"https://{host}/api/v1" if host else "")
+    if not TOKEN or not base:
+        return None
+    try:
+        courses = api_get(base, "/courses", {"enrollment_type": "student", "enrollment_state": "active", "include[]": ["total_scores", "current_grading_period_scores"], "per_page": 100})
+    except Exception as exc:
+        print(f"Could not reach the Canvas API ({type(exc).__name__}). Assignments still came from the feed.")
+        return {"error": "network"}
+    if courses is None:
+        print("Canvas did not accept the CANVAS_TOKEN secret (expired or deleted?). Make a new token in Canvas and update the secret.")
+        return {"error": "token"}
+    codes = {}
+    for item in items:  # the feed says which course id goes with which [code]
+        ctx = re.search(r"include_contexts=course_(\d+)", item.get("htmlLink", ""))
+        tag = re.search(r"\[([^\]]+)\]\s*$", item.get("summary", ""))
+        if ctx and tag:
+            codes[ctx.group(1)] = short_code(tag.group(1))
+    low, high = now - dt.timedelta(days=30), now + dt.timedelta(days=45)
+    result, status, missing = [], {}, []
+    for course in courses:
+        if not isinstance(course, dict) or not course.get("id") or course.get("access_restricted_by_date"):
+            continue
+        cid = str(course["id"])
+        mine = [e for e in course.get("enrollments") or [] if "student" in str(e.get("type", "")).lower()]
+        if not mine:
+            continue
+        score, grade = pick_score(mine[0])
+        code = codes.get(cid) or short_code(course.get("course_code")) or cid
+        entry = {"id": cid, "code": code, "name": str(course.get("name") or "")[:80], "short": short_name(course.get("name"), code),
+                 "score": round(score, 1) if isinstance(score, (int, float)) else None, "grade": grade or None, "missing": 0,
+                 "url": f"https://{host}/courses/{cid}/grades" if host else ""}
+        try:
+            assignments = api_get(base, f"/courses/{cid}/assignments", {"include[]": "submission", "order_by": "due_at", "per_page": 100}) or []
+        except Exception:
+            assignments = []
+        for a in assignments:
+            due = a.get("due_at")
+            sub = a.get("submission") or {}
+            if not due:
+                continue
+            when = dt.datetime.fromisoformat(due.replace("Z", "+00:00"))
+            if sub.get("missing") and not sub.get("excused"):
+                entry["missing"] += 1
+                missing.append({"title": str(a.get("name") or "")[:140], "code": code, "due": due, "url": a.get("html_url") or ""})
+            if not low <= when <= high:
+                continue
+            done = bool(sub.get("submitted_at")) or bool(sub.get("excused")) or (sub.get("workflow_state") == "graded" and (sub.get("score") or 0) > 0)
+            status["event-assignment-" + str(a.get("id"))] = {"done": done, "at": sub.get("submitted_at"), "missing": bool(sub.get("missing")), "late": bool(sub.get("late")), "excused": bool(sub.get("excused"))}
+        result.append(entry)
+    result.sort(key=lambda c: c["name"].lower())
+    missing.sort(key=lambda m: m["due"])
+    return {"courses": result, "status": status, "missing": missing[:20]}
 
 
 def main():
@@ -85,20 +196,33 @@ def main():
         found.append((start[1], item))
     found.sort(key=lambda pair: pair[0])
     items = [item for _, item in found]
+    data = {"events": items}
     previous = None
     if os.path.exists(OUT):
         try:
             with open(OUT, encoding="utf-8") as handle:
-                previous = json.load(handle).get("events")
+                previous = json.load(handle)
+                previous.pop("at", None)
         except Exception:
             previous = None
-    if previous == items:
-        print(f"No changes ({len(items)} assignments).")
+    school = school_data(items, now)
+    if school and "error" in school:
+        # keep the last grades we had, marked as not current, so the app can say what to fix
+        for key in ("courses", "status", "missing"):
+            if previous and key in previous:
+                data[key] = previous[key]
+        data["schoolError"] = school["error"]
+        school = None
+    elif school:
+        data.update(school)
+    extra = f", {len(school['courses'])} classes with grades" if school else ""
+    if previous == data:
+        print(f"No changes ({len(items)} assignments{extra}).")
         return 0
     with open(OUT, "w", encoding="utf-8") as handle:
-        json.dump({"at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "events": items}, handle, ensure_ascii=False, indent=1)
+        json.dump(dict({"at": now.strftime("%Y-%m-%dT%H:%M:%SZ")}, **data), handle, ensure_ascii=False, indent=1)
         handle.write("\n")
-    print(f"Saved {len(items)} assignments.")
+    print(f"Saved {len(items)} assignments{extra}.")
     return 0
 
 
