@@ -25,7 +25,7 @@ INFIL routes add a quick stretch as a waypoint, and the 15-minute stand-down bre
 
 ## This week: mini deadlines
 
-Each assignment due this week (from Canvas, or ops in the School area) gets one mini deadline: a single day from Monday to Friday, before the real deadline, to finish it in one go. Different assignments land on different days, bigger ones spread out first, so the work is scattered across the week instead of piling up on the weekend. Tick it on HQ when it's done (that closes the op). Unfinished ones move to today, and REPLAN rebuilds the rest of the week.
+Each assignment due this week (from Canvas, or ops in the School area) gets one mini deadline: a single day from Monday to Friday, before the real deadline, to finish it in one go. Different assignments land on different days, bigger ones spread out first, so the work is scattered across the week instead of piling up on the weekend. Tick it on HQ when it's done (that closes the op). Unfinished ones move to today, and REPLAN rebuilds the rest of the week. Tap **DAY OFF** on any day (or **PLAN DAYS OFF** for holidays further ahead) and nothing gets planned there; anything already on it moves to other days before its deadline.
 
 Canvas tags each class with a section number. Tap **NAME THEM** on HQ (or a course chip) to give each one a short name; the screen lists a few assignments under each number so you can tell which class it is. Old copies of a Canvas assignment (from an earlier import, or typed by hand with the same title and due date) are merged into the one coming from Canvas, keeping anything already done on them.
 

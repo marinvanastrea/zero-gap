@@ -889,6 +889,11 @@ a.gr-row:hover,a.gr-row:focus-visible{box-shadow:inset 0 0 0 1px var(--hud-dim)}
 .ann-body p{margin:10px 0 0}
 .pl-day.today .lbl{color:var(--hud)}
 .pl-day.past{opacity:.55}
+.pl-lbl{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pl-off{font-size:10.5px;letter-spacing:.1em;color:var(--mute);padding:6px 0}
+.pl-day.off .pl-free{color:var(--mute)}
+.do-list{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.do-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--line);font-size:14px}
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .pl-list li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--line)}
 .pl-list li.done .pl-t b{text-decoration:line-through;opacity:.6}
@@ -3041,7 +3046,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.6.2';
+const APP_VERSION = '1.7.0';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3875,10 +3880,10 @@ function planLoad(days, items) {
 }
 function planPlace(op, items, weekMon, startK, keepFrom) {
   const est = planEst(op), n = 1, w = est, labels = ['Do it'];
-  const work = [0, 1, 2, 3, 4].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k) { return k >= startK; });
+  const work = [0, 1, 2, 3, 4].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k) { return k >= startK && !dayOff(k); });
   let allowed = work.filter(function (k) { return k < op.due; });
   if (!allowed.length) {
-    const all = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k) { return k >= startK && k < op.due; });
+    const all = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k) { return k >= startK && k < op.due && !dayOff(k); });
     allowed = all.length ? all.slice(-1) : [startK];
   }
   const load = planLoad(allowed, items);
@@ -3910,7 +3915,7 @@ function planSync(force) {
   items = items.filter(function (it) { const o = S.ops[it.op]; return o && (it.done || o.status === 'closed' || (byId[it.op] && byId[it.op].due === it.due)); });
   items.forEach(function (it) { const o = S.ops[it.op]; if (o && o.status === 'closed' && !it.done) { it.done = true; it.auto = true; } });
   const moved = [];
-  items = items.filter(function (it) { if (!it.done && it.day < startK) { moved.push(it); return false; } return true; });
+  items = items.filter(function (it) { if (!it.done && (it.day < startK || dayOff(it.day))) { moved.push(it); return false; } return true; });
   const planned = new Set(items.map(function (it) { return it.op; }));
   const rollOps = {};
   moved.forEach(function (it) { if (!rollOps[it.op] || it.i < rollOps[it.op]) rollOps[it.op] = it.i; });
@@ -3952,15 +3957,40 @@ function planTick(id) {
   toast('Mini deadline done', o ? o.title : '', 'good');
   render();
 }
+/* Days off (holidays, trips, sick days): the plan puts nothing on them. Kept in hq.daysOff as { 'YYYY-MM-DD': 'name' }. */
+function dayOff(k) { const d = S.hq && S.hq.daysOff; return !!(d && Object.prototype.hasOwnProperty.call(d, k)); }
+function dayOffName(k) { const d = (S.hq && S.hq.daysOff) || {}; return String(d[k] || ''); }
+function daysOffSet(k, name, on) {
+  if (!isDate(k)) return;
+  const d = Object.assign({}, (S.hq && S.hq.daysOff) || {}), cutoff = dayKey(Date.now() - 60 * 864e5);
+  if (on) d[k] = String(name || '').trim().slice(0, 40); else delete d[k];
+  Object.keys(d).forEach(function (x) { if (!isDate(x) || x < cutoff) delete d[x]; });
+  patchHQ({ daysOff: d });
+  try { planSync(false); } catch (e) {}
+  toast(on ? shortDay(k) + ' is a day off' : shortDay(k) + ' is a work day again', on ? 'Anything planned that day moved to other days.' : 'Tap REPLAN if you want to use it this week.', 'info');
+  render();
+}
+function daysOffModalHTML() {
+  const d = (S.hq && S.hq.daysOff) || {}, today = dayKey(Date.now()), f = ui.dayOff || (ui.dayOff = { k: '', name: '' });
+  const list = Object.keys(d).filter(function (k) { return k >= today; }).sort();
+  return '<div class="mod" role="dialog" aria-modal="true" aria-labelledby="do-t"><div class="mcard"><div class="mhead"><div><div class="eyebrow">Week plan</div><h2 class="mtitle" id="do-t">DAYS OFF</h2></div>' + closeX() + '</div>' +
+    '<p>Holidays, trips, game days, sick days. Nothing gets planned on a day off, and anything already there moves to other days before its deadline.</p>' +
+    '<div class="field"><label for="do-date">Date</label><input class="inp" type="date" id="do-date" data-bind="dayOff.k" data-live="1" min="' + today + '" value="' + esc(f.k) + '"></div>' +
+    '<div class="field"><label for="do-name">Name (optional)</label><input class="inp" id="do-name" data-bind="dayOff.name" maxlength="40" placeholder="e.g. Thanksgiving" value="' + esc(f.name) + '" autocomplete="off"></div>' +
+    '<div class="row"><button class="btn solid" type="button" data-act="dayoff-add"' + (isDate(f.k) && f.k >= today ? '' : ' disabled') + '>ADD DAY OFF</button><button class="btn" type="button" data-act="close-mod">DONE</button></div>' +
+    (list.length ? '<div class="lbl" style="margin-top:16px">Coming up</div><ul class="do-list">' + list.map(function (k) { return '<li><span><b>' + esc(shortDay(k)) + '</b>' + (d[k] ? ' · ' + esc(d[k]) : '') + '</span><button class="link" type="button" data-act="dayoff-del" data-v="' + esc(k) + '">REMOVE</button></li>'; }).join('') + '</ul>' : '') + '</div></div>';
+}
 function planPanelHTML() {
   const items = planItems();
   if (!items.length) return '';
   const weekMon = planWeekStart(), todayK = dayKey(Date.now()), left = items.filter(function (it) { return !planItemDone(it); }).length;
   const days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k, i) { return items.some(function (it) { return it.day === k; }) || (i < 5 && k >= todayK); });
   const rows = days.map(function (k) {
-    const its = items.filter(function (it) { return it.day === k; }), past = k < todayK;
+    const its = items.filter(function (it) { return it.day === k; }), past = k < todayK, off = dayOff(k);
     const label = (k === todayK ? 'TODAY · ' : '') + shortDay(k).toUpperCase().replace(/^TODAY$/, DOW[parseDay(k).getDay()] + ' ' + parseDay(k).getDate());
-    return '<div class="pl-day' + (k === todayK ? ' today' : '') + (past ? ' past' : '') + '"><div class="lbl">' + label + '</div>' +
+    const tog = past ? '' : '<button class="link pl-off" type="button" data-act="dayoff-toggle" data-v="' + k + '">' + (off ? 'UNDO DAY OFF' : 'DAY OFF') + '</button>';
+    if (off && !its.length) return '<div class="pl-day off"><div class="lbl pl-lbl"><span>' + label + '</span>' + tog + '</div><p class="pl-free">Day off' + (dayOffName(k) ? ' · ' + esc(dayOffName(k)) : '') + '. Nothing planned.</p></div>';
+    return '<div class="pl-day' + (k === todayK ? ' today' : '') + (past ? ' past' : '') + '"><div class="lbl pl-lbl"><span>' + label + '</span>' + tog + '</div>' +
       (its.length ? '<ul class="pl-list">' + its.map(function (it) {
         const o = S.ops[it.op] || {}, done = planItemDone(it);
         return '<li class="' + (done ? 'done' : '') + '"><button class="pl-chk" type="button" data-act="plan-tick" data-id="' + esc(it.id) + '" aria-pressed="' + done + '" aria-label="' + (done ? 'Undo: ' : 'Done: ') + esc(o.title || 'Assignment') + '">' + (done ? '✓' : '') + '</button>' +
@@ -3968,7 +3998,7 @@ function planPanelHTML() {
       }).join('') + '</ul>' : '<p class="pl-free">' + (past ? '—' : 'Free') + '</p>') + '</div>';
   }).join('');
   return '<section class="panel a-plan" aria-label="This week"><div class="ph"><span class="ph-t">This week · mini deadlines</span><span class="ph-m">' + (left ? left + ' TO GO' : 'ALL DONE') + '</span></div>' +
-    coursesNudgeHTML() + '<div class="pl-days">' + rows + '</div><div class="row" style="margin-top:10px"><button class="link" type="button" data-act="plan-replan">REPLAN THE REST OF THE WEEK</button></div></section>';
+    coursesNudgeHTML() + '<div class="pl-days">' + rows + '</div><div class="row" style="margin-top:10px"><button class="link" type="button" data-act="plan-replan">REPLAN THE REST OF THE WEEK</button><button class="link" type="button" data-act="daysoff">PLAN DAYS OFF</button></div></section>';
 }
 
 /* ================= SYNC (encrypted, through your private GitHub repo) ================= */
@@ -4084,7 +4114,7 @@ function syncMerge(base, local, remote) {
     const firstRemote = !bh && (rh.created || Infinity) < (lh.created || Infinity);
     out.hq = {};
     Object.keys(Object.assign({}, bh || {}, lh, rh)).forEach(function (k) {
-      const v = m3((bh || {})[k], lh[k], rh[k], function (l, r) { return k === 'plan' ? mergePlan((bh || {}).plan, l, r) : firstRemote ? r : l; });
+      const v = m3((bh || {})[k], lh[k], rh[k], function (l, r) { return k === 'plan' ? mergePlan((bh || {}).plan, l, r) : k === 'daysOff' ? mergeMap((bh || {}).daysOff, l, r, function (a, b) { return firstRemote ? b : a; }) : firstRemote ? r : l; });
       if (v !== undefined) out.hq[k] = v;
     });
   }
@@ -5031,6 +5061,7 @@ function modalHTML(D) {
   }
   if (m === 'past' && ui.past) return pastModalHTML();
   if (m === 'courses') return coursesModalHTML();
+  if (m === 'daysoff') return daysOffModalHTML();
   if (m === 'why' && ui.why) return whyModalHTML();
   if (m === 'restore' && ui.restore) return restoreModalHTML();
   if (m === 'away' && ui.away) {
@@ -5224,6 +5255,10 @@ document.addEventListener('click', function (ev) {
     case 'settings': openSettings(); break;
     case 'close-mod': closeModal(); break;
     case 'courses': coursesOpen(); break;
+    case 'daysoff': ui.dayOff = { k: '', name: '' }; ui.modal = 'daysoff'; render(); break;
+    case 'dayoff-toggle': daysOffSet(v, '', !dayOff(v)); break;
+    case 'dayoff-add': { const f = ui.dayOff || {}; if (isDate(f.k)) { daysOffSet(f.k, f.name, true); ui.dayOff = { k: '', name: '' }; } break; }
+    case 'dayoff-del': daysOffSet(v, '', false); break;
     case 'ann-open': ui.annOpen = ui.annOpen === id ? null : id; if (ui.annOpen) annMarkSeen(id); render(); break;
     case 'ann-all': ui.annAll = !ui.annAll; render(); break;
     case 'crs-save-all': coursesSave(); break;
@@ -5319,7 +5354,7 @@ document.addEventListener('click', function (ev) {
     case 'anc-export': anchorExport(); break;
     case 'anc-import': { const inp = document.getElementById('anc-in'); if (inp) inp.click(); break; }
     case 'plan-tick': planTick(id); break;
-    case 'plan-replan': planSync(true); toast('Week replanned', 'Unfinished steps are spread over the days left.', 'info'); render(); break;
+    case 'plan-replan': planSync(true); toast('Week replanned', 'Unfinished assignments are spread over the days left.', 'info'); render(); break;
     case 'sync-connect': syncConnect(); break;
     case 'sync-now': syncNow(true); break;
     case 'sync-off': ui.sync = ui.sync || {}; if (ui.sync.confirm) syncDisconnect(); else { ui.sync.confirm = true; render(); setTimeout(function () { if (ui.sync) { ui.sync.confirm = false; scheduleRender(); } }, 4000); } break;
