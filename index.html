@@ -1293,7 +1293,7 @@ function recommend(D) {
   if (last && last.op) { const o = S.ops[last.op], lt = tierOf(o); if (o && o.status !== 'closed' && (lt === 1 || lt === 2)) return { op: o, why: 'Keep going on this one. Switching costs focus.' }; }
   const urgent = all.filter(isUrgent).sort(function (a, b) { return whyOf(b).impact - whyOf(a).impact; });
   if (urgent.length) return { op: urgent[0], why: 'You are warmed up. Time for what matters most.' };
-  const pt = planToday(); if (pt.length) { const it = pt[0], po = S.ops[it.op]; if (po) return { op: po, why: "Today's mini deadline: " + it.step.toLowerCase() + (it.n > 1 ? ' (step ' + (it.i + 1) + ' of ' + it.n + ')' : '') + '. Real deadline ' + shortDay(po.due) + '.' }; }
+  const pt = planToday(); if (pt.length) { const it = pt[0], po = S.ops[it.op]; if (po) return { op: po, why: "Today's mini deadline. The real one is " + shortDay(po.due) + ', so finishing it today keeps the rest of the week light.' }; }
   if (D.open[2].length) return { op: D.open[2][0], why: 'You are warmed up. Knock out the nearest deadline.' };
   if (D.open[3].length) return { op: D.open[3][0], why: 'Nothing urgent. Clear small admin while you are rolling.' };
   return { op: D.open[4][0], why: 'Everything important is done. Pick something fun.' };
@@ -3041,7 +3041,7 @@ function offlineSettingsHTML() {
 /* ================= STANDALONE APP (installable, offline, data on this device) ================= */
 /* The same page runs as a home-screen app from GitHub Pages. There it saves on the device, works with no
    internet (service worker), and picks up new versions when online. Bump APP_VERSION here and VERSION in sw.js together. */
-const APP_VERSION = '1.6.1';
+const APP_VERSION = '1.6.2';
 const APP_URL = 'https://marinvanastrea.github.io/zero-gap/';
 const BACKUP_KEY = 'zerogap.lastbackup';
 function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
@@ -3846,10 +3846,10 @@ document.addEventListener('keydown', function (ev) {
 });
 
 /* ================= WEEK PLAN (mini deadlines) ================= */
-/* Assignments due this week get their own mini deadlines, spread across Mon–Fri and well before the real deadline.
-   Bigger ones are split into steps (Start → Finish) on different days. The plan stays put: new assignments are
-   slotted in, unfinished steps from earlier days move to today, and REPLAN rebuilds the rest of the week. */
-const PLAN_STEPS = { 1: ['Do it'], 2: ['Start', 'Finish'], 3: ['Start', 'Keep going', 'Finish'] };
+/* Each assignment due this week gets one mini deadline: a single day, Mon–Fri, before the real deadline, on which
+   it gets done in one go. Different assignments go on different days, bigger ones spread out first, so the work is
+   scattered across the week instead of piling up on the weekend. The plan stays put: new assignments are slotted in,
+   unfinished ones from earlier days move to today, and REPLAN rebuilds the rest of the week. */
 function pDay(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + (n || 0), 12); }
 function planWeekStart() {
   const n = new Date(), dow = n.getDay(), mon = pDay(n, -((dow + 6) % 7));
@@ -3874,7 +3874,7 @@ function planLoad(days, items) {
   return load;
 }
 function planPlace(op, items, weekMon, startK, keepFrom) {
-  const est = planEst(op), n = est >= 4 ? 3 : est >= 3 ? 2 : 1, w = est / n, labels = PLAN_STEPS[n];
+  const est = planEst(op), n = 1, w = est, labels = ['Do it'];
   const work = [0, 1, 2, 3, 4].map(function (i) { return dayKey(pDay(weekMon, i).getTime()); }).filter(function (k) { return k >= startK; });
   let allowed = work.filter(function (k) { return k < op.due; });
   if (!allowed.length) {
@@ -3899,6 +3899,12 @@ function planSync(force) {
   const weekMon = planWeekStart(), wk = dayKey(weekMon.getTime()), startK = planStartKey(), cur = S.hq.plan;
   let items = cur && cur.week === wk && !force ? clone(cur.items || []) : [];
   if (force && cur && cur.week === wk) items = clone(cur.items || []).filter(function (it) { return it.done; });
+  if (items.some(function (it) { return (it.n || 1) > 1; })) {
+    // plans from before v1.6.2 split assignments into steps: keep finished assignments as one item, replace the rest
+    const kept = {};
+    items = items.filter(function (it) { const o = S.ops[it.op]; if ((it.n || 1) === 1) return true; if (!o || o.status !== 'closed' || kept[it.op]) return false; kept[it.op] = 1; return true; })
+      .map(function (it) { return (it.n || 1) > 1 ? Object.assign({}, it, { id: it.op + '#0', i: 0, n: 1, step: 'Do it', w: planEst(S.ops[it.op]), done: true }) : it; });
+  }
   const cand = planCandidates(weekMon), byId = {};
   cand.forEach(function (o) { byId[o.id] = o; });
   items = items.filter(function (it) { const o = S.ops[it.op]; return o && (it.done || o.status === 'closed' || (byId[it.op] && byId[it.op].due === it.due)); });
@@ -3943,7 +3949,7 @@ function planTick(id) {
   patchHQ({ plan: Object.assign({}, p, { items: items, at: Date.now() }) });
   if (o && it.i === it.n - 1 && o.status !== 'closed') { closeOp(o.id); return; }
   Sfx.play('blip');
-  toast('Mini deadline done · ' + it.step, o ? o.title : '', 'good');
+  toast('Mini deadline done', o ? o.title : '', 'good');
   render();
 }
 function planPanelHTML() {
@@ -3957,8 +3963,8 @@ function planPanelHTML() {
     return '<div class="pl-day' + (k === todayK ? ' today' : '') + (past ? ' past' : '') + '"><div class="lbl">' + label + '</div>' +
       (its.length ? '<ul class="pl-list">' + its.map(function (it) {
         const o = S.ops[it.op] || {}, done = planItemDone(it);
-        return '<li class="' + (done ? 'done' : '') + '"><button class="pl-chk" type="button" data-act="plan-tick" data-id="' + esc(it.id) + '" aria-pressed="' + done + '" aria-label="' + (done ? 'Undo: ' : 'Done: ') + esc(it.step + ' ' + (o.title || '')) + '">' + (done ? '✓' : '') + '</button>' +
-          '<div class="pl-t"><b>' + esc(it.step) + ' · ' + esc(o.title || 'Assignment') + '</b><span>' + (o.course ? esc(courseLabel(o.course)) + ' · ' : '') + 'real deadline ' + esc(shortDay(it.due)) + (it.n > 1 ? ' · step ' + (it.i + 1) + ' of ' + it.n : '') + '</span></div></li>';
+        return '<li class="' + (done ? 'done' : '') + '"><button class="pl-chk" type="button" data-act="plan-tick" data-id="' + esc(it.id) + '" aria-pressed="' + done + '" aria-label="' + (done ? 'Undo: ' : 'Done: ') + esc(o.title || 'Assignment') + '">' + (done ? '✓' : '') + '</button>' +
+          '<div class="pl-t"><b>' + esc(o.title || 'Assignment') + '</b><span>' + (o.course ? esc(courseLabel(o.course)) + ' · ' : '') + 'real deadline ' + esc(shortDay(it.due)) + '</span></div></li>';
       }).join('') + '</ul>' : '<p class="pl-free">' + (past ? '—' : 'Free') + '</p>') + '</div>';
   }).join('');
   return '<section class="panel a-plan" aria-label="This week"><div class="ph"><span class="ph-t">This week · mini deadlines</span><span class="ph-m">' + (left ? left + ' TO GO' : 'ALL DONE') + '</span></div>' +
